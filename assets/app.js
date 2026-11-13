@@ -33,7 +33,7 @@ function syncPush(){if(!SYNC.on||SYNC.busy||!SYNC.dirty)return;SYNC.busy=true;SY
   else{SYNC.state='err';SYNC.dirty=true;clearTimeout(SYNC.t);SYNC.t=setTimeout(syncPush,15000);syncMark()}
  }).catch(function(){SYNC.busy=false;SYNC.state='err';SYNC.dirty=true;clearTimeout(SYNC.t);SYNC.t=setTimeout(syncPush,15000);syncMark()})}
 function syncMark(){var e=document.getElementById('syncst');if(e)e.innerHTML=syncText()}
-function syncText(){return SYNC.state==='ok'?'<b style="color:#0f7b6c">● Guardado en la base de datos</b> (versión '+SYNC.ver+')':SYNC.state==='err'?'<b style="color:#b83a1f">● Sin conexión con la base:</b> guardado en este navegador, reintento solo':SYNC.state==='auth'?'Sesión vencida':SYNC.state==='baddb'?'<b style="color:#b83a1f">La contraseña de private/db.php no funciona.</b> Revisala en el archivo.':SYNC.state==='nodb'?'Sin base de datos configurada: se guarda solo en este navegador':'Se guarda solo en este navegador'}
+function syncText(){return SYNC.state==='ok'?'<b style="color:#0f7b6c">● Guardado en la base de datos</b> (versión '+SYNC.ver+')':SYNC.state==='err'?'<b style="color:#b83a1f">● Sin conexión con la base:</b> guardado en este navegador, reintento solo':SYNC.state==='auth'?'Sesión vencida':SYNC.state==='baddb'?'<b style="color:#b83a1f">No se pudo conectar a la base.</b> Error de MySQL: '+esc(SYNC.det||'sin detalle'):SYNC.state==='nodb'?'Sin base de datos configurada: se guarda solo en este navegador':'Se guarda solo en este navegador'}
 function syncPull(conflict){return syncApi('load').then(function(j){if(j.status===200&&j.data&&j.data.rem){var busy=document.getElementById('ov')&&document.getElementById('ov').classList.contains('on');if(!conflict&&(SYNC.dirty||SYNC.busy||busy))return;if(!conflict&&j.version===SYNC.ver)return;S=j.data;fixS();SYNC.ver=j.version;SYNC.state='ok';try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render();if(conflict)toast('Se actualizó con los cambios hechos desde otro dispositivo')}})}
 function syncInit(){var m=document.querySelector('meta[name="finish-csrf"]');if(!m)return;SYNC.csrf=m.content;SYNC.on=true;
  syncApi('load').then(function(j){
@@ -41,7 +41,7 @@ function syncInit(){var m=document.querySelector('meta[name="finish-csrf"]');if(
    var has=function(d){return !!d&&['rem','prov','pagos','plans','notes','soc','bancos'].some(function(k){return d[k]&&d[k].length})};
    if(has(j.data)||(j.data&&!has(S))){S=j.data;fixS();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render()}
    else if(has(S)){SYNC.dirty=true;syncPush()}}
-  else if(j.status===503){SYNC.on=false;SYNC.state=j.error==='db'?'baddb':'nodb';render()}
+  else if(j.status===503){SYNC.on=false;SYNC.state=j.error==='db'?'baddb':'nodb';SYNC.det=j.detalle||'';render()}
   else{SYNC.state='err';syncMark()}
  }).catch(function(){SYNC.state='err';syncMark()});
  document.addEventListener('visibilitychange',function(){if(!document.hidden&&SYNC.on)syncPull(false)})}

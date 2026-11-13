@@ -43,14 +43,21 @@ if (($_GET['a'] ?? '') === 'setup_db' && $_SERVER['REQUEST_METHOD'] === 'POST') 
 }
 if (!is_file($cfgFile)) out(503, ['error' => 'sin_db']);
 $c = @include $cfgFile;
-if (!is_array($c)) out(503, ['error' => 'sin_db']);
+if (!is_array($c)) out(503, ['error' => 'db', 'detalle' => 'private/db.php existe pero no devuelve un arreglo (revisá que empiece con <?php y tenga return [ ... ];)']);
 
+$pdo = null; $lastErr = '';
+foreach (array_unique([(string)($c['host'] ?? '127.0.0.1'), '127.0.0.1', 'localhost']) as $hst) {
+    try {
+        $pdo = new PDO(
+            'mysql:host=' . $hst . ';port=' . ($c['port'] ?? 3306) . ';dbname=' . ($c['name'] ?? '') . ';charset=utf8mb4',
+            (string)($c['user'] ?? ''), (string)($c['pass'] ?? ''),
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+        );
+        break;
+    } catch (Throwable $e) { $lastErr = $hst . ': ' . $e->getMessage(); }
+}
+if (!$pdo) out(503, ['error' => 'db', 'detalle' => $lastErr]);
 try {
-    $pdo = new PDO(
-        'mysql:host=' . ($c['host'] ?? '127.0.0.1') . ';port=' . ($c['port'] ?? 3306) . ';dbname=' . $c['name'] . ';charset=utf8mb4',
-        $c['user'], $c['pass'],
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
-    );
     $pdo->exec("CREATE TABLE IF NOT EXISTS finish_state (
         id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
         version INT UNSIGNED NOT NULL DEFAULT 0,
@@ -64,7 +71,7 @@ try {
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 } catch (Throwable $e) {
-    out(503, ['error' => 'db']);
+    out(503, ['error' => 'db', 'detalle' => $e->getMessage()]);
 }
 
 $a = $_GET['a'] ?? '';
