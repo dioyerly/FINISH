@@ -278,3 +278,30 @@ textarea.i{resize:vertical;min-height:86px}
 @keyframes tor{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 @media(prefers-reduced-motion:reduce){.dock .plus,.btn.c{animation:none}}
 .meta .mv{background:#efe6ff!important;color:#5b2fbf!important}
+
+/* ===== Hoy con movimiento ===== */
+.bigd b{background:var(--tor);background-size:220% 220%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:tor 9s ease-in-out infinite}
+.day.today{position:relative;box-shadow:0 0 0 0 rgba(138,92,255,.5);animation:glow 2.6s ease-out infinite}
+@keyframes glow{70%{box-shadow:0 0 0 12px rgba(138,92,255,0)}100%{box-shadow:0 0 0 0 rgba(138,92,255,0)}}
+.hoy .card,.hoy .late{transition:transform .25s,box-shadow .25s}
+.hoy .card:hover{transform:translateY(-3px);box-shadow:0 18px 40px -22px rgba(14,17,32,.35)}
+.hoy .it .bd,.hoy .next .rw{transition:transform .2s,box-shadow .2s}
+.hoy .it .bd:hover{transform:translateX(4px)}
+.hoy .next .rw:hover{transform:translateX(4px)}
+.hoy .sum div{transition:transform .2s}.hoy .sum div:hover{transform:translateY(-2px)}
+.hoy .it.done .bd{opacity:.6}
+.hoy .late .it .ln b{animation:alerta 2s ease-in-out infinite}
+@keyframes alerta{50%{transform:scale(1.25)}}
+.enter .head,.enter .qa,.enter .ribbon,.enter .grid2>div>.card,.enter .late,.enter .it,.enter .next .rw{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+.enter .qa{animation-delay:.08s}.enter .ribbon{animation-delay:.16s}
+.enter .grid2>div:first-child>.card:first-child{animation-delay:.24s}.enter .grid2>div:first-child>.card.next{animation-delay:.34s}
+.enter .grid2>div:last-child>*{animation-delay:.3s}
+.enter .it:nth-child(1){animation-delay:.38s}.enter .it:nth-child(2){animation-delay:.46s}.enter .it:nth-child(3){animation-delay:.54s}.enter .it:nth-child(4){animation-delay:.62s}.enter .it:nth-child(n+5){animation-delay:.7s}
+.enter .next .rw:nth-child(n){animation-delay:.5s}
+.enter .day{animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+.enter .day:nth-child(1){animation-delay:.18s}.enter .day:nth-child(2){animation-delay:.21s}.enter .day:nth-child(3){animation-delay:.24s}.enter .day:nth-child(4){animation-delay:.27s}.enter .day:nth-child(5){animation-delay:.3s}.enter .day:nth-child(6){animation-delay:.33s}.enter .day:nth-child(n+7){animation-delay:.36s}
+.enter .dial .arc{stroke-dasharray:100;animation:draw 1.4s .3s cubic-bezier(.3,.7,.2,1) both}
+.enter .dial .mid{animation:rise .7s .5s both}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}}
+@keyframes draw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.bigd b,.day.today,.hoy .late .it .ln b{animation:none}.enter *{animation:none!important}}

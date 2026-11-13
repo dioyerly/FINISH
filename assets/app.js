@@ -76,11 +76,11 @@ var IC={hoy:'<path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5
 function ico(n,w){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round">'+IC[n]+'</svg>'}
 var CHK='<svg viewBox="0 0 24 24" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>';
 /* ===== navegación ===== */
-var VIEW='hoy',CAL=new Date(),Q='';
+var HA=true,VIEW='hoy',CAL=new Date(),Q='';
 var NAV=[['hoy','Hoy','hoy'],['mes','Mes','mes'],['plan','Planes','plan'],['nota','Notas','nota'],['pago','Pagos','pago'],['ajuste','Ajustes','ajuste']];
 function dock(){$('#dock').innerHTML=NAV.slice(0,3).map(nb).join('')+'<button class="plus" data-act="new" aria-label="Nuevo recordatorio">'+ico('plus',2.6)+'</button>'+NAV.slice(3).map(nb).join('')}
 function nb(n){return '<button data-v="'+n[0]+'" class="'+(VIEW===n[0]?'on':'')+'" aria-label="'+n[1]+'">'+ico(n[2])+'<span>'+n[1]+'</span></button>'}
-function go(v){VIEW=v;if(typeof INL!=='undefined')INL=null;dock();render();window.scrollTo(0,0)}
+function go(v){VIEW=v;HA=true;if(typeof INL!=='undefined')INL=null;dock();render();window.scrollTo(0,0)}
 function render(){if(INL)INL.pull();var f={hoy:vHoy,mes:vMes,plan:vPlan,nota:vNota,pago:vPago,ajuste:vSet}[VIEW];$('#app').innerHTML='<div class="top"><span class="logo"><i></i>Finish</span></div>'+(S.demo&&VIEW!=='ajuste'?'<div class="demo"><span><b>Datos de ejemplo.</b> Todo lo que cargues se guarda en este navegador. Para empezar limpio: Ajustes → Borrar ejemplos.</span></div>':'')+f();after()}
 /* ===== HOY ===== */
 function greet(){var h=new Date().getHours();return h<6?'Buenas noches':h<13?'Buen día':h<20?'Buenas tardes':'Buenas noches'}
@@ -88,7 +88,7 @@ function dial(items){var W=420,cx=210,cy=214,r=168,now=new Date(),nt=now.getHour
  function pt(t,rr){t=Math.max(6,Math.min(24,t));var a=Math.PI*(1-(t-6)/18);return [cx+(rr||r)*Math.cos(a),cy-(rr||r)*Math.sin(a)]}
  var s='<svg viewBox="0 0 '+W+' 250" role="img" aria-label="Arco del día">';
  s+='<path d="M'+(cx-r)+' '+cy+'A'+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="#dde2ef" stroke-width="16" stroke-linecap="round"/>';
- var np=pt(nt);if(nt>6)s+='<path d="M'+(cx-r)+' '+cy+'A'+r+' '+r+' 0 0 1 '+np[0].toFixed(1)+' '+np[1].toFixed(1)+'" fill="none" stroke="#0e1120" stroke-width="16" stroke-linecap="round"/>';
+ var np=pt(nt);if(nt>6)s+='<path class="arc" pathLength="100" d="M'+(cx-r)+' '+cy+'A'+r+' '+r+' 0 0 1 '+np[0].toFixed(1)+' '+np[1].toFixed(1)+'" fill="none" stroke="#0e1120" stroke-width="16" stroke-linecap="round"/>';
  [6,9,12,15,18,21,24].forEach(function(h){var p=pt(h,r-34);s+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+4).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#9aa1b6" font-family="SG,sans-serif">'+(h===24?'24':h)+'</text>'});
  var last=-9,lv=0;items.forEach(function(o){var t=+o.r.time.slice(0,2)+(+o.r.time.slice(3,5))/60;lv=(t-last<.7)?lv+1:0;last=t;var p=pt(t,r+lv*24);
   s+='<g><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="9" fill="'+(o.done?'#ffffff':cc(o.r))+'" stroke="'+(o.done?'#9aa1b6':'#ffffff')+'" stroke-width="3"/>'+(o.done?'<path d="m'+(p[0]-3.5).toFixed(1)+' '+(p[1]).toFixed(1)+' 2.5 2.5 4.5-5" stroke="#0f7b6c" stroke-width="2" fill="none" stroke-linecap="round"/>':'')+'</g>'});
@@ -102,14 +102,14 @@ function vHoy(){var T=today(),list=occ(T),n=new Date(),d=list.filter(function(o)
  var rib='';for(var i=0;i<14;i++){var dt=addD(n,i),ds=iso(dt),oc=occ(ds),pay=oc.some(function(o){return o.r.cat==='pago'});rib+='<button class="day'+(i===0?' today':'')+(pay?' pay':'')+'" data-act="day" data-d="'+ds+'"><small>'+DOWS[dt.getDay()]+'</small><b>'+dt.getDate()+'</b><i>'+oc.slice(0,3).map(function(o){return '<u style="background:'+cc(o.r)+'"></u>'}).join('')+'</i></button>'}
  var nxt='',cnt=0;for(var k=1;k<=7&&cnt<8;k++){var ds2=iso(addD(n,k));occ(ds2).forEach(function(o){if(cnt>=8||o.r.type==='daily')return;cnt++;nxt+='<button class="rw" style="--c:'+cc(o.r)+'" data-act="edit" data-id="'+o.r.id+'"><span class="dd">'+DOWS[pd(ds2).getDay()]+'<b>'+pd(ds2).getDate()+'</b></span><i></i><span class="tx" style="flex:1;min-width:0"><div class="tt">'+esc(o.r.t)+'</div><div class="meta"><span>'+esc(o.r.time)+'</span>'+(o.r.amt?'<span class="amt">'+money(o.r.amt)+'</span>':'')+'</div></span></button>'})}
  var mails=outbox(1).length;
- return '<div class="head"><div class="bigd"><b>'+n.getDate()+'</b><div><small>'+DOWL[n.getDay()]+'</small><span>'+MON[n.getMonth()]+'<br>'+n.getFullYear()+'</span></div></div><div class="hi"><p>'+greet()+(S.cfg.name?', <b>'+esc(S.cfg.name)+'</b>':'')+'.<br>'+(list.length?(d===list.length?'Día completo. Bien hecho.':'Te quedan '+(list.length-d)+' por hacer hoy.'):'Hoy no tenés nada agendado.')+'</p></div></div>'
+ var en=HA;HA=false;return '<div class="hoy'+(en?' enter':'')+'"><div class="head"><div class="bigd"><b>'+n.getDate()+'</b><div><small>'+DOWL[n.getDay()]+'</small><span>'+MON[n.getMonth()]+'<br>'+n.getFullYear()+'</span></div></div><div class="hi"><p>'+greet()+(S.cfg.name?', <b>'+esc(S.cfg.name)+'</b>':'')+'.<br>'+(list.length?(d===list.length?'Día completo. Bien hecho.':'Te quedan '+(list.length-d)+' por hacer hoy.'):'Hoy no tenés nada agendado.')+'</p></div></div>'
  +'<div class="qa"><label><span class="sl">+</span><input id="qa" placeholder="Escribí natural: pagar luz martes y jueves 10:00 @ana" autocomplete="off"><kbd>Enter</kbd></label><div class="chips" id="qchips"></div></div>'
  +'<div class="ribbon">'+rib+'</div>'
  +'<div class="grid2"><div><div class="card"><div class="dial">'+dial(list)+'<div class="mid"><b>'+d+'<i>/'+list.length+'</i></b><small>hechos hoy</small></div></div>'
  +'<div class="sum"><div><b>'+od.length+'</b><span>atrasados</span></div><div><b>'+mails+'</b><span>mails hoy</span></div><div><b>'+list.filter(function(o){return o.r.cat==='pago'}).length+'</b><span>pagos hoy</span></div></div></div>'
  +'<div class="card next" style="margin-top:18px"><h3>Próximos 7 días</h3>'+(nxt||'<div class="empty">Semana tranquila.</div>')+'</div></div>'
  +'<div>'+(od.length?'<div class="late"><h3>Atrasados · '+od.length+'</h3><div class="thread">'+od.map(function(o){return itemHTML(o,true)}).join('')+'</div></div>':'')
- +'<div class="card"><h3>Hoy · hilo del día</h3>'+(list.length?'<div class="thread">'+list.map(function(o){return itemHTML(o)}).join('')+'</div>':'<div class="empty">Nada para hoy. Escribí arriba para agregar algo.</div>')+'</div></div></div>'}
+ +'<div class="card"><h3>Hoy · hilo del día</h3>'+(list.length?'<div class="thread">'+list.map(function(o){return itemHTML(o)}).join('')+'</div>':'<div class="empty">Nada para hoy. Escribí arriba para agregar algo.</div>')+'</div></div></div></div>'}
 /* ===== MES ===== */
 function vMes(){var y=CAL.getFullYear(),m=CAL.getMonth(),first=new Date(y,m,1),off=(first.getDay()+6)%7,L=dim(y,m),T=today();
  var h='<div class="mhead"><h2>'+MON[m]+' <i>'+y+'</i></h2><div class="nav"><button class="btn lite sq" data-act="mprev" aria-label="Mes anterior">‹</button><button class="btn lite s" data-act="mtoday">Hoy</button><button class="btn lite sq" data-act="mnext" aria-label="Mes siguiente">›</button></div></div><div class="cal">';
