@@ -25,3 +25,8 @@ Por ahora los datos (recordatorios, pagos, proveedores) se guardan en el navegad
 
 ## Editar
 Los cambios van en `assets/app.css`, `assets/app.js` y `private/app.html`. Al subirlos se ven al recargar (el servidor agrega la versión del archivo para evitar caché).
+
+## Avisos por mail
+- La app calcula los próximos 14 días de avisos y los guarda en la base (`finish_mail`) cada vez que se guarda algo.
+- `cron.php` los envía por SMTP. Se ejecuta con una tarea programada de hPanel cada 5 minutos: `php /home/u748338755/domains/finish.estrategia.site/public_html/cron.php`
+- La contraseña de la casilla va en `private/mail.php` (plantilla: `private/mail.example.php`). No se sube a Git.

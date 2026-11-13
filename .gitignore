@@ -4,3 +4,4 @@ tools/out/
 *.bak
 node_modules/
 private/db.php
+private/mail.php

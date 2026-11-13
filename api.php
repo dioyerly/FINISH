@@ -118,4 +118,45 @@ if ($a === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     out(200, ['version' => $new]);
 }
 
+if ($a === 'mailst' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    require_once __DIR__ . '/private/lib.php'; finish_mail_table($pdo);
+    $r = $pdo->query('SELECT SUM(sent_at IS NULL AND tries < 3) p, SUM(sent_at IS NOT NULL) s, SUM(tries >= 3 AND sent_at IS NULL) f FROM finish_mail')->fetch();
+    $e = $pdo->query('SELECT err FROM finish_mail WHERE err IS NOT NULL ORDER BY send_at DESC LIMIT 1')->fetch();
+    out(200, ['config' => finish_mail_cfg() !== null, 'pend' => (int)$r['p'], 'sent' => (int)$r['s'], 'fail' => (int)$r['f'], 'err' => $e['err'] ?? '']);
+}
+
+if ($a === 'mailtest' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!hash_equals($csrf, (string)($_SERVER['HTTP_X_CSRF'] ?? ''))) out(400, ['error' => 'csrf']);
+    require_once __DIR__ . '/private/lib.php';
+    $cfg = finish_mail_cfg(); if (!$cfg) out(412, ['error' => 'sin_mail']);
+    $in = json_decode((string)file_get_contents('php://input'), true);
+    $to = trim((string)($in['to'] ?? ''));
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) out(400, ['error' => 'mail']);
+    $e = smtp_send($cfg, $to, 'Finish · mail de prueba', '<div style="font-family:Arial,sans-serif;font-size:15px"><b>Funciona.</b> Los avisos de Finish van a llegar a este correo.</div>');
+    $e ? out(502, ['error' => 'envio', 'detalle' => $e]) : out(200, ['ok' => 1]);
+}
+
+if ($a === 'outbox' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!hash_equals($csrf, (string)($_SERVER['HTTP_X_CSRF'] ?? ''))) out(400, ['error' => 'csrf']);
+    require_once __DIR__ . '/private/lib.php'; finish_mail_table($pdo);
+    $in = json_decode((string)file_get_contents('php://input'), true);
+    $items = is_array($in['items'] ?? null) ? array_slice($in['items'], 0, 400) : null;
+    if ($items === null) out(400, ['error' => 'datos']);
+    $pdo->beginTransaction();
+    try {
+        $pdo->exec('DELETE FROM finish_mail WHERE sent_at IS NULL AND tries < 3');   // se reemplaza lo pendiente; lo ya enviado se conserva
+        $ins = $pdo->prepare('INSERT IGNORE INTO finish_mail (k, send_at, to_list, subject, body) VALUES (?, ?, ?, ?, ?)');
+        $n = 0;
+        foreach ($items as $it) {
+            $to = array_values(array_filter((array)($it['to'] ?? []), fn($x) => is_string($x) && filter_var($x, FILTER_VALIDATE_EMAIL)));
+            $k = (string)($it['k'] ?? ''); $at = (int)($it['at'] ?? 0);
+            if ($k === '' || !$to || $at < 1e9) continue;
+            $ins->execute([substr(sha1($k), 0, 40), $at, json_encode($to), mb_substr((string)($it['subj'] ?? ''), 0, 290), mb_substr((string)($it['html'] ?? ''), 0, 60000)]);
+            $n += $ins->rowCount();
+        }
+        $pdo->commit();
+    } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); out(500, ['error' => 'guardar']); }
+    out(200, ['ok' => 1, 'n' => $n]);
+}
+
 out(404, ['error' => 'ruta']);

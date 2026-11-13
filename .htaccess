@@ -4,6 +4,7 @@ Options -Indexes
   RewriteEngine On
   RewriteRule ^private/ - [F,L]
   RewriteRule ^tools/ - [F,L]
+  RewriteRule ^cron\.php$ - [F,L]
 </IfModule>
 <FilesMatch "\.(md|json|py|bak)$">
   <IfModule mod_authz_core.c>
