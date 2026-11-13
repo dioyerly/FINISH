@@ -18,7 +18,7 @@ function fmtD(s,o){return pd(s).toLocaleDateString('es-AR',o||{weekday:'long',da
 /* ===== estado ===== */
 var KEY='finish_v2',S=null;
 function seed(){return {demo:false,cfg:{name:'',lead:60,digest:true,digestH:'07:30',payDays:[2,4]},ppl:[{id:'me',name:'Yo',email:'',me:true}],rem:[],done:{},day:{},soc:[],bancos:[],prov:[],pagos:[],plans:[],notes:[]}}
-function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}if(!S||!S.rem)S=seed();S.day=S.day||{};S.done=S.done||{};['soc','bancos','prov','pagos'].forEach(function(k){S[k]=S[k]||[]})}
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}if(!S||!S.rem)S=seed();S.day=S.day||{};S.done=S.done||{};['soc','bancos','prov','pagos'].forEach(function(k){S[k]=S[k]||[]});var chg=false;S.rem.forEach(function(r){if(r.type==='monthly'&&r.date&&r.dom&&pd(r.date).getDate()!==+r.dom){if(r.src)r.date=nextDom(r.dom,r.date);else r.dom=pd(r.date).getDate();chg=true}});if(chg)save()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ===== días hábiles y feriados (Argentina) ===== */
 var HOL={'2026-11-23':'Día de la Soberanía Nacional','2026-12-07':'Puente turístico','2026-12-08':'Inmaculada Concepción','2026-12-25':'Navidad',
@@ -29,11 +29,12 @@ function shiftable(r){return r.cat==='venc'&&['daily','weekly','biweekly'].index
 function mvNote(ds){var w=pd(ds).getDay(),h=holName(ds);return (w===0||w===6)?DOWL[w].toLowerCase():(h||'feriado')}
 function mvTag(o){return o.mv?'<span class="mv">↪ pasó del '+esc(fmtD(o.mv,{weekday:'short',day:'numeric',month:'short'}))+' ('+esc(mvNote(o.mv))+')</span>':''}
 /* ===== recurrencia ===== */
+function nextDom(dom,from){var d=pd(from||today()),g=0;while(g++<70){var L=dim(d.getFullYear(),d.getMonth());if(d.getDate()===Math.min(+dom||1,L))return iso(d);d=addD(d,1)}return from||today()}
 function matches(r,ds){var d=pd(ds);if(r.type==='once')return r.date===ds;if(ds<r.date)return false;if(r.until&&ds>r.until)return false;
  var dow=d.getDay(),L=dim(d.getFullYear(),d.getMonth()),dm=d.getDate();
  if(r.type==='daily')return true;
  if(r.type==='weekly')return (r.days||[]).indexOf(dow)>=0;
- if(r.type==='monthly')return dm===Math.min(+r.dom||1,L);
+ if(r.type==='monthly')return dm===Math.min(pd(r.date).getDate(),L);
  if(r.type==='bimonthly')return dm===Math.min(+r.dom||1,L)||dm===Math.min(+r.dom2||15,L);
  if(r.type==='yearly'){var y0=pd(r.date);return d.getMonth()===y0.getMonth()&&dm===Math.min(y0.getDate(),L)}
  if(r.type==='biweekly')return Math.round((d-pd(r.date))/864e5)%14===0;
@@ -43,7 +44,7 @@ function occ(ds){var out=[];S.rem.forEach(function(r){if(shiftable(r)){if(!isBiz
  out.sort(function(a,b){return a.r.time<b.r.time?-1:a.r.time>b.r.time?1:0});return out}
 function repLabel(r){if(r.type==='once')return 'Una vez';if(r.type==='daily')return 'Todos los días';
  if(r.type==='weekly'){var d=(r.days||[]).slice().sort(function(a,b){return ((a+6)%7)-((b+6)%7)});if(d.length===7)return 'Todos los días';return 'Cada '+d.map(function(x){return DOWL[x].slice(0,3).toLowerCase()}).join(' y ').replace(/ y ([^y]+) y /g,', $1 y ')}
- if(r.type==='monthly')return 'Día '+r.dom+' de cada mes';if(r.type==='bimonthly')return 'Quincenal · días '+r.dom+' y '+r.dom2;if(r.type==='biweekly')return 'Cada 14 días';if(r.type==='yearly'){var yd=pd(r.date);return 'Cada año el '+yd.getDate()+' de '+MON[yd.getMonth()].toLowerCase()}if(r.type==='nthdow')return ['','Primer','Segundo','Tercer','Cuarto','Último'][+r.nth||1]+' '+DOWL[+r.dow||0].toLowerCase()+' del mes';return ''}
+ if(r.type==='monthly')return 'Día '+pd(r.date).getDate()+' de cada mes';if(r.type==='bimonthly')return 'Quincenal · días '+r.dom+' y '+r.dom2;if(r.type==='biweekly')return 'Cada 14 días';if(r.type==='yearly'){var yd=pd(r.date);return 'Cada año el '+yd.getDate()+' de '+MON[yd.getMonth()].toLowerCase()}if(r.type==='nthdow')return ['','Primer','Segundo','Tercer','Cuarto','Último'][+r.nth||1]+' '+DOWL[+r.dow||0].toLowerCase()+' del mes';return ''}
 function cc(r){return CATS[r.cat]?CATS[r.cat].c:'#8b3f8f'}
 /* ===== iconos ===== */
 var IC={hoy:'<path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/>',mes:'<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',plan:'<path d="M5 21V4M5 4h12l-3 4.5 3 4.5H5"/>',nota:'<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',pago:'<rect x="3" y="6" width="18" height="12" rx="3"/><path d="M3 10h18M7 15h3"/>',ajuste:'<path d=\"M4 7h9M19 7h1M4 17h1M11 17h9\"/><circle cx=\"16\" cy=\"7\" r=\"2.5\"/><circle cx=\"8\" cy=\"17\" r=\"2.5\"/>',plus:'<path d="M12 5v14M5 12h14"/>',mail:'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 8 8 6 8-6"/>',rep:'<path d="M17 2l3 3-3 3M3 11V9a4 4 0 0 1 4-4h13M7 22l-3-3 3-3M21 13v2a4 4 0 0 1-4 4H4"/>',up:'<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>'};
@@ -326,7 +327,7 @@ function importVenc(txt){var arr;try{arr=JSON.parse(txt)}catch(e){toast('Ese arc
    cat=tipo==='vencimiento'?'venc':tipo==='tarea'?'tarea':'record',dt=String(v.fecha||T),d0=pd(dt),
    r=blankR({t:String(v.concepto||'').trim(),cat:cat,time:/^\d{1,2}:\d{2}$/.test(v.hora||'')?pad(+String(v.hora).split(':')[0])+':'+v.hora.split(':')[1]:'09:00',amt:amt>0?amt:'',lead:0,mail:true,to:[me.id],src:key});
   if(!r.t)return;
-  if(fr==='mensual'){r.type='monthly';r.dom=d0.getDate();r.date=dt<T?T:dt}
+  if(fr==='mensual'){r.type='monthly';r.dom=d0.getDate();r.date=nextDom(r.dom,dt<T?T:dt)}
   else if(fr==='cada_14_dias'){r.type='biweekly';r.date=nextAnchor(dt)}
   else if(fr==='diario'){r.type='daily';r.date=dt<T?T:dt}
   else if(fr==='primer_martes'||fr==='primer_jueves'){r.type='nthdow';r.nth=1;r.dow=fr==='primer_martes'?2:4;r.date=dt<T?T:dt}
@@ -404,11 +405,8 @@ function remForm(r,isNew){var R=JSON.parse(JSON.stringify(r));
   +'<div class="fld"><span style="display:block;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--mut);margin-bottom:5px;text-transform:uppercase">Repetición</span><div class="seg">'+[['once','Fecha específica'],['daily','Diario'],['weekly','Semanal'],['biweekly','Cada 14 días'],['bimonthly','Dos días fijos al mes'],['monthly','Mensual'],['yearly','Anual'],['nthdow','Día fijo del mes']].map(function(x){return '<button data-ty="'+x[0]+'" class="'+(T===x[0]?'on':'')+'">'+x[1]+'</button>'}).join('')+'</div></div>'
   +(T==='weekly'?'<div class="fld"><div class="seg dsel">'+[1,2,3,4,5,6,0].map(function(d){return '<button data-dw="'+d+'" class="'+(R.days.indexOf(d)>=0?'on':'')+'">'+DOWI[d]+'</button>'}).join('')+'</div><div class="seg" style="margin-top:8px"><button data-pre="tj">Martes y jueves</button><button data-pre="lv">Lunes a viernes</button></div></div>':'')
   +(T==='nthdow'?'<div class="r2"><label class="fld"><span>Cuál</span><select class="i" id="f_nth">'+[[1,'Primer'],[2,'Segundo'],[3,'Tercer'],[4,'Cuarto'],[5,'Último']].map(function(o){return '<option value="'+o[0]+'"'+(+R.nth===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label><label class="fld"><span>Día</span><select class="i" id="f_dow">'+[1,2,3,4,5,6,0].map(function(d){return '<option value="'+d+'"'+(+R.dow===d?' selected':'')+'>'+DOWL[d]+'</option>'}).join('')+'</select></label></div>':'')
-  +(T==='monthly'?'<label class="fld"><span>Se repite el día … de cada mes (si no existe, usa el último)</span><input class="i" id="f_dom" type="number" min="1" max="31" value="'+esc(R.dom)+'"></label>':'')
   +(T==='bimonthly'?'<p class="hint" style="font-size:13px;color:var(--mut);margin:-4px 0 10px">Se repite siempre esos dos días de cada mes (por defecto 1 y 15). Si querés "cada 2 semanas" desde una fecha, elegí <b>Cada 14 días</b>.</p><div class="r2"><label class="fld"><span>Primer día</span><input class="i" id="f_dom" type="number" min="1" max="31" value="'+esc(R.dom)+'"></label><label class="fld"><span>Segundo día</span><input class="i" id="f_dom2" type="number" min="1" max="31" value="'+esc(R.dom2)+'"></label></div>':'')
   +'<div class="r2"><label class="fld"><span>'+(T==='once'?'Fecha':T==='yearly'?'Fecha (se repite cada año)':'Empieza el')+'</span><input class="i" id="f_date" type="date" value="'+esc(R.date)+'"></label><label class="fld"><span>Hora</span><input class="i" id="f_time" type="time" value="'+esc(R.time)+'"></label></div>'
-  +(T==='monthly'&&R.date&&pd(R.date).getDate()!==+R.dom?'<div class="warn" style="margin-bottom:10px">Empieza el día '+pd(R.date).getDate()+' pero se repite el día '+esc(R.dom)+' de cada mes. <button class="btn s" data-fixdom="1" style="margin-left:6px">Repetir el día '+pd(R.date).getDate()+'</button></div>':'')
-  +(T!=='once'?nextDates(R):'')
   +(T!=='once'?'<label class="fld"><span>Termina el (opcional)</span><input class="i" id="f_until" type="date" value="'+esc(R.until)+'"></label>':'')
   +((R.cat==='pago'||R.cat==='venc'||R.amt)?'<label class="fld"><span>Monto (opcional)</span><input class="i" id="f_amt" type="number" min="0" inputmode="decimal" value="'+esc(R.amt)+'" placeholder="0"></label>':'')
   +'<label class="fld"><span>Nota</span><textarea class="i" id="f_note">'+esc(R.note)+'</textarea></label>'
@@ -418,7 +416,7 @@ function remForm(r,isNew){var R=JSON.parse(JSON.stringify(r));
  function pull(m){var g=function(i){var e=$(i,m);return e?e.value:null};if(g('#f_t')!==null)R.t=g('#f_t');if(g('#f_date'))R.date=g('#f_date');if(g('#f_time'))R.time=g('#f_time');if(g('#f_until')!==null)R.until=g('#f_until');if(g('#f_dom'))R.dom=+g('#f_dom');if(g('#f_dom2'))R.dom2=+g('#f_dom2');if(g('#f_nth'))R.nth=+g('#f_nth');if(g('#f_dow'))R.dow=+g('#f_dow');if(g('#f_amt')!==null)R.amt=g('#f_amt')===''?'':+g('#f_amt');if(g('#f_note')!==null)R.note=g('#f_note');if(g('#f_lead')!==null)R.lead=+g('#f_lead');var mm=$('#f_mail',m);if(mm)R.mail=mm.checked}
  openSheet('',function(m){ui(m);
   m.onclick=function(e){var b=e.target.closest('button');if(!b)return;var d=b.dataset;
-   if(d.fixdom){pull(m);R.dom=pd(R.date).getDate();ui(m)}else if(d.cat){pull(m);R.cat=d.cat;ui(m)}else if(d.ty){pull(m);if(d.ty==='monthly'&&R.type!=='monthly')R.dom=pd(R.date).getDate();R.type=d.ty;if(d.ty==='weekly'&&!R.days.length)R.days=[pd(R.date).getDay()];ui(m)}
+   if(d.cat){pull(m);R.cat=d.cat;ui(m)}else if(d.ty){pull(m);R.type=d.ty;if(d.ty==='weekly'&&!R.days.length)R.days=[pd(R.date).getDay()];ui(m)}
    else if(d.dw!=null){pull(m);var n=+d.dw,i=R.days.indexOf(n);if(i>=0)R.days.splice(i,1);else R.days.push(n);ui(m)}
    else if(d.pre){pull(m);R.days=d.pre==='tj'?[2,4]:[1,2,3,4,5];ui(m)}
    else if(d.to){pull(m);var j=R.to.indexOf(d.to);if(j>=0)R.to.splice(j,1);else R.to.push(d.to);ui(m)}
@@ -426,8 +424,8 @@ function remForm(r,isNew){var R=JSON.parse(JSON.stringify(r));
    else if(d.x==='del'){if(confirm('¿Eliminar este recordatorio y todas sus repeticiones?')){S.rem=S.rem.filter(function(x){return x.id!==R.id});save();closeSheet();render();toast('Eliminado')}}
    else if(d.x==='save'){pull(m);if(!R.t.trim()){toast('Falta el título');return}if(R.type==='weekly'&&!R.days.length){toast('Elegí al menos un día');return}
     if(R.mail&&!R.to.length){var me=S.ppl.filter(function(p){return p.me})[0];R.to=[me.id]}
-    R.t=R.t.trim();if(isNew){R.id=uid();S.rem.push(R)}else{var ix=S.rem.findIndex(function(x){return x.id===R.id});S.rem[ix]=R}save();closeSheet();render();toast('Guardado')}};
-  m.onchange=function(e){if(e.target.id==='f_mail'){pull(m);ui(m)}else if(e.target.id==='f_date'&&e.target.value){pull(m);if(R.type==='monthly')R.dom=pd(R.date).getDate();ui(m)}else if(/^f_(dom|dom2|nth|dow)$/.test(e.target.id)){pull(m);ui(m)}}})}
+    R.t=R.t.trim();if(R.type==='monthly')R.dom=pd(R.date).getDate();if(isNew){R.id=uid();S.rem.push(R)}else{var ix=S.rem.findIndex(function(x){return x.id===R.id});S.rem[ix]=R}save();closeSheet();render();toast('Guardado')}};
+  m.onchange=function(e){if(e.target.id==='f_mail'){pull(m);ui(m)}}})}
 function dayDrawer(ds){var list=occ(ds);
  openSheet('<h2 style="text-transform:capitalize">'+esc(fmtD(ds))+'</h2>'+(list.length?'<div class="thread" style="margin-bottom:14px">'+list.map(function(o){return itemHTML(o)}).join('')+'</div>':'<div class="empty">Sin recordatorios este día.</div>')
  +'<label class="fld"><span>Anotación del día</span><textarea class="i" id="dnote" placeholder="Agenda libre, ideas, lo que pasó…">'+esc(S.day[ds]||'')+'</textarea></label><div class="acts"><button class="btn o" data-x="close">Cerrar</button><button class="btn c" data-x="add">+ Recordatorio este día</button></div>',function(m){
@@ -482,7 +480,7 @@ function parseQ(src){var s=' '+src.trim()+' ',o={t:'',type:'once',date:today(),t
  o.t=s.replace(/\s+/g,' ').replace(/\s+(el|del|de|para)\s*$/i,'').replace(/^[\s,.\-–]+|[\s,.\-–]+$/g,'');o.t=o.t.charAt(0).toUpperCase()+o.t.slice(1);
  if(/\b(pagar|pago|factura|cuota|vencimiento|alquiler|sueldo)/i.test(o.t))o.cat='pago';else if(/\b(llamar|reuni[oó]n|cliente|entrega|enviar|revisar)/i.test(o.t))o.cat='trabajo';else if(/\b(m[eé]dic|gimnasio|cumple|familia|comprar)/i.test(o.t))o.cat='personal';
  if(o.type==='weekly'&&!o.days.length)o.days=[new Date().getDay()];
- if(o.type==='monthly'&&o.date!==today())o.dom=pd(o.date).getDate();
+ if(o.type==='monthly')o.date=nextDom(o.dom,o.date);
  return o}
 function qDesc(o){var a=[];if(o.type==='once')a.push(fmtD(o.date,{weekday:'short',day:'numeric',month:'short'}));else a.push(repLabel(Object.assign({},o)));a.push(o.time);if(o.mail)a.push('✉ '+o.to.map(function(id){return S.ppl.filter(function(p){return p.id===id})[0].name.split(' ')[0]}).join(', '));return a}
 function qaBind(){var q=$('#qa');if(!q)return;q.addEventListener('input',function(){var o=parseQ(q.value),c=$('#qchips');if(!o||!o.t){c.innerHTML='';return}c.innerHTML='<span class="chip go">'+esc(o.t)+'</span>'+qDesc(o).map(function(x){return '<span class="chip">'+esc(x)+'</span>'}).join('')+'<span class="chip" style="background:none;color:#8d94ab">'+esc(CATS[o.cat].n)+'</span>'});
