@@ -394,6 +394,8 @@ $('#ov').addEventListener('click',function(e){if(e.target.id==='ov')closeSheet()
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
 function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove()},2300)}
 function blankR(o){return Object.assign({id:'',t:'',note:'',cat:'trabajo',type:'once',date:today(),time:'09:00',days:[],dom:1,dom2:15,nth:1,dow:2,until:'',lead:+S.cfg.lead,mail:false,to:[],amt:''},o||{})}
+function nextDates(R){if(!R.date)return '';var out=[],d=pd(R.date),g=0;while(out.length<3&&g++<800){var ds=iso(d);if(matches(R,ds))out.push(ds);d=addD(d,1)}
+ return out.length?'<p class="hint" style="font-size:13px;color:var(--mut);margin:0 0 10px">Próximas fechas: <b>'+out.map(function(x){return esc(fmtD(x,{weekday:'short',day:'numeric',month:'short'}))}).join(' · ')+'</b></p>':''}
 function remForm(r,isNew){var R=JSON.parse(JSON.stringify(r));
  function ui(m){var T=R.type;
   m.innerHTML='<h2>'+(isNew?'Nuevo recordatorio':'Editar recordatorio')+'</h2>'
@@ -405,6 +407,8 @@ function remForm(r,isNew){var R=JSON.parse(JSON.stringify(r));
   +(T==='monthly'?'<label class="fld"><span>Se repite el día … de cada mes (si no existe, usa el último)</span><input class="i" id="f_dom" type="number" min="1" max="31" value="'+esc(R.dom)+'"></label>':'')
   +(T==='bimonthly'?'<p class="hint" style="font-size:13px;color:var(--mut);margin:-4px 0 10px">Se repite siempre esos dos días de cada mes (por defecto 1 y 15). Si querés "cada 2 semanas" desde una fecha, elegí <b>Cada 14 días</b>.</p><div class="r2"><label class="fld"><span>Primer día</span><input class="i" id="f_dom" type="number" min="1" max="31" value="'+esc(R.dom)+'"></label><label class="fld"><span>Segundo día</span><input class="i" id="f_dom2" type="number" min="1" max="31" value="'+esc(R.dom2)+'"></label></div>':'')
   +'<div class="r2"><label class="fld"><span>'+(T==='once'?'Fecha':T==='yearly'?'Fecha (se repite cada año)':'Empieza el')+'</span><input class="i" id="f_date" type="date" value="'+esc(R.date)+'"></label><label class="fld"><span>Hora</span><input class="i" id="f_time" type="time" value="'+esc(R.time)+'"></label></div>'
+  +(T==='monthly'&&R.date&&pd(R.date).getDate()!==+R.dom?'<div class="warn" style="margin-bottom:10px">Empieza el día '+pd(R.date).getDate()+' pero se repite el día '+esc(R.dom)+' de cada mes. <button class="btn s" data-fixdom="1" style="margin-left:6px">Repetir el día '+pd(R.date).getDate()+'</button></div>':'')
+  +(T!=='once'?nextDates(R):'')
   +(T!=='once'?'<label class="fld"><span>Termina el (opcional)</span><input class="i" id="f_until" type="date" value="'+esc(R.until)+'"></label>':'')
   +((R.cat==='pago'||R.cat==='venc'||R.amt)?'<label class="fld"><span>Monto (opcional)</span><input class="i" id="f_amt" type="number" min="0" inputmode="decimal" value="'+esc(R.amt)+'" placeholder="0"></label>':'')
   +'<label class="fld"><span>Nota</span><textarea class="i" id="f_note">'+esc(R.note)+'</textarea></label>'
@@ -414,7 +418,7 @@ function remForm(r,isNew){var R=JSON.parse(JSON.stringify(r));
  function pull(m){var g=function(i){var e=$(i,m);return e?e.value:null};if(g('#f_t')!==null)R.t=g('#f_t');if(g('#f_date'))R.date=g('#f_date');if(g('#f_time'))R.time=g('#f_time');if(g('#f_until')!==null)R.until=g('#f_until');if(g('#f_dom'))R.dom=+g('#f_dom');if(g('#f_dom2'))R.dom2=+g('#f_dom2');if(g('#f_nth'))R.nth=+g('#f_nth');if(g('#f_dow'))R.dow=+g('#f_dow');if(g('#f_amt')!==null)R.amt=g('#f_amt')===''?'':+g('#f_amt');if(g('#f_note')!==null)R.note=g('#f_note');if(g('#f_lead')!==null)R.lead=+g('#f_lead');var mm=$('#f_mail',m);if(mm)R.mail=mm.checked}
  openSheet('',function(m){ui(m);
   m.onclick=function(e){var b=e.target.closest('button');if(!b)return;var d=b.dataset;
-   if(d.cat){pull(m);R.cat=d.cat;ui(m)}else if(d.ty){pull(m);if(d.ty==='monthly'&&R.type!=='monthly')R.dom=pd(R.date).getDate();R.type=d.ty;if(d.ty==='weekly'&&!R.days.length)R.days=[pd(R.date).getDay()];ui(m)}
+   if(d.fixdom){pull(m);R.dom=pd(R.date).getDate();ui(m)}else if(d.cat){pull(m);R.cat=d.cat;ui(m)}else if(d.ty){pull(m);if(d.ty==='monthly'&&R.type!=='monthly')R.dom=pd(R.date).getDate();R.type=d.ty;if(d.ty==='weekly'&&!R.days.length)R.days=[pd(R.date).getDay()];ui(m)}
    else if(d.dw!=null){pull(m);var n=+d.dw,i=R.days.indexOf(n);if(i>=0)R.days.splice(i,1);else R.days.push(n);ui(m)}
    else if(d.pre){pull(m);R.days=d.pre==='tj'?[2,4]:[1,2,3,4,5];ui(m)}
    else if(d.to){pull(m);var j=R.to.indexOf(d.to);if(j>=0)R.to.splice(j,1);else R.to.push(d.to);ui(m)}
@@ -423,7 +427,7 @@ function remForm(r,isNew){var R=JSON.parse(JSON.stringify(r));
    else if(d.x==='save'){pull(m);if(!R.t.trim()){toast('Falta el título');return}if(R.type==='weekly'&&!R.days.length){toast('Elegí al menos un día');return}
     if(R.mail&&!R.to.length){var me=S.ppl.filter(function(p){return p.me})[0];R.to=[me.id]}
     R.t=R.t.trim();if(isNew){R.id=uid();S.rem.push(R)}else{var ix=S.rem.findIndex(function(x){return x.id===R.id});S.rem[ix]=R}save();closeSheet();render();toast('Guardado')}};
-  m.onchange=function(e){if(e.target.id==='f_mail'){pull(m);ui(m)}else if(e.target.id==='f_date'&&R.type==='monthly'&&e.target.value){pull(m);R.dom=pd(R.date).getDate();ui(m)}}})}
+  m.onchange=function(e){if(e.target.id==='f_mail'){pull(m);ui(m)}else if(e.target.id==='f_date'&&e.target.value){pull(m);if(R.type==='monthly')R.dom=pd(R.date).getDate();ui(m)}else if(/^f_(dom|dom2|nth|dow)$/.test(e.target.id)){pull(m);ui(m)}}})}
 function dayDrawer(ds){var list=occ(ds);
  openSheet('<h2 style="text-transform:capitalize">'+esc(fmtD(ds))+'</h2>'+(list.length?'<div class="thread" style="margin-bottom:14px">'+list.map(function(o){return itemHTML(o)}).join('')+'</div>':'<div class="empty">Sin recordatorios este día.</div>')
  +'<label class="fld"><span>Anotación del día</span><textarea class="i" id="dnote" placeholder="Agenda libre, ideas, lo que pasó…">'+esc(S.day[ds]||'')+'</textarea></label><div class="acts"><button class="btn o" data-x="close">Cerrar</button><button class="btn c" data-x="add">+ Recordatorio este día</button></div>',function(m){
