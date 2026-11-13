@@ -80,9 +80,9 @@ var CHK='<svg viewBox="0 0 24 24" fill="none" stroke-width="3.2" stroke-linecap=
 var HA=true,VIEW='hoy',CAL=new Date(),Q='';
 var NAV=[['hoy','Hoy','hoy'],['mes','Mes','mes'],['plan','Planes','plan'],['nota','Notas','nota'],['pago','Pagos','pago'],['ajuste','Ajustes','ajuste']];
 function dock(){$('#dock').innerHTML=NAV.slice(0,3).map(nb).join('')+'<button class="plus" data-act="new" aria-label="Nuevo recordatorio">'+ico('plus',2.6)+'</button>'+NAV.slice(3).map(nb).join('')}
-function nb(n){return '<button data-v="'+n[0]+'" class="'+(VIEW===n[0]?'on':'')+'" aria-label="'+n[1]+'">'+ico(n[2])+'<span>'+n[1]+'</span></button>'}
+function nb(n){return '<button data-v="'+n[0]+'" class="'+(VIEW===n[0]||(VIEW==='conc'&&n[0]==='pago')?'on':'')+'" aria-label="'+n[1]+'">'+ico(n[2])+'<span>'+n[1]+'</span></button>'}
 function go(v){VIEW=v;HA=true;if(typeof INL!=='undefined')INL=null;dock();render();window.scrollTo(0,0)}
-function render(){if(INL)INL.pull();var f={hoy:vHoy,mes:vMes,plan:vPlan,nota:vNota,pago:vPago,ajuste:vSet}[VIEW];$('#app').innerHTML='<div class="top"><span class="logo"><i></i>Finish</span></div>'+(S.demo&&VIEW!=='ajuste'?'<div class="demo"><span><b>Datos de ejemplo.</b> Todo lo que cargues se guarda en este navegador. Para empezar limpio: Ajustes → Borrar ejemplos.</span></div>':'')+f();after()}
+function render(){if(INL)INL.pull();var f={hoy:vHoy,mes:vMes,plan:vPlan,nota:vNota,pago:vPago,ajuste:vSet,conc:vConc}[VIEW];$('#app').innerHTML='<div class="top"><span class="logo"><i></i>Finish</span></div>'+(S.demo&&VIEW!=='ajuste'?'<div class="demo"><span><b>Datos de ejemplo.</b> Todo lo que cargues se guarda en este navegador. Para empezar limpio: Ajustes → Borrar ejemplos.</span></div>':'')+f();after()}
 /* ===== HOY ===== */
 function greet(){var h=new Date().getHours();return h<6?'Buenas noches':h<13?'Buen día':h<20?'Buenas tardes':'Buenas noches'}
 function dial(items){var W=420,cx=210,cy=214,r=168,now=new Date(),nt=now.getHours()+now.getMinutes()/60;
@@ -111,6 +111,32 @@ function vHoy(){var T=today(),list=occ(T),n=new Date(),d=list.filter(function(o)
  +'<div class="card next" style="margin-top:18px"><h3>Próximos 7 días</h3>'+(nxt||'<div class="empty">Semana tranquila.</div>')+'</div></div>'
  +'<div>'+(od.length?'<div class="late"><h3>Atrasados · '+od.length+'</h3><div class="thread">'+od.map(function(o){return itemHTML(o,true)}).join('')+'</div></div>':'')
  +'<div class="card"><h3>Hoy · hilo del día</h3>'+(list.length?'<div class="thread">'+list.map(function(o){return itemHTML(o)}).join('')+'</div>':'<div class="empty">Nada para hoy. Escribí arriba para agregar algo.</div>')+'</div></div></div></div>'}
+
+/* ===== CONCILIACIÓN IVA (ARCA vs Odoo) · usa assets/conc.js; no toca ningún otro dato ===== */
+var CN={a:null,o:null,an:'',on:'',res:null,tab:'conc'};
+function cnLoad(w,file){if(!file)return;if(!/\.xlsx?$/i.test(file.name)){toast('Subí un Excel (.xlsx)');return}
+ loadXlsx().then(function(X){return file.arrayBuffer().then(function(buf){var wb=X.read(buf,{type:'array',cellDates:true}),ws=wb.Sheets[wb.SheetNames[0]],L=FinConc.leer(X.utils.sheet_to_json(ws,{header:1,raw:true,defval:null}));
+  if(!L.rows.length||L.cols.FACTURA==null&&L.cols.FECHA==null){toast('No reconozco las columnas de ese Excel');return}
+  CN[w]=L;CN[w+'n']=file.name;CN.res=null;if(CN.a&&CN.o){try{CN.res=FinConc.conciliar(CN.a,CN.o);CN.tab='conc'}catch(e){toast('No pude conciliar: '+e.message)}}render()})}).catch(function(){toast('No pude leer ese archivo')})}
+function cnRows(l){var n=l.length>300?300:l.length;return '<div class="ctw"><table class="ctab"><thead><tr><th>Factura</th><th>Fecha</th><th>Nombre</th><th>CUIT</th><th class="r">Gravado</th><th class="r">IVA</th><th class="r">Total</th></tr></thead><tbody>'
+ +(l.slice(0,300).map(function(x){return '<tr><td>'+esc(x.FACTURA)+'</td><td>'+esc(FinConc.fechaTxt(x.FECHA))+'</td><td>'+esc(x.NOMBRE)+'</td><td>'+esc(x.CUIT_CLEAN)+'</td><td class="r">'+esc(money(x.GRAVADO))+'</td><td class="r">'+esc(money(x['IVA 10,5%']+x['IVA 21%']+x['IVA 27%']))+'</td><td class="r">'+esc(money(x.TOTAL))+'</td></tr>'}).join('')||'<tr><td colspan="7" class="empty">Sin registros</td></tr>')+'</tbody></table></div>'+(l.length>n?'<p class="hint">Se muestran las primeras 300. El Excel trae todas ('+l.length+').</p>':'')}
+function vConc(){var R=CN.res,h='<div class="head"><div><h2 style="font-size:clamp(34px,6vw,56px)">Conciliación IVA</h2><p class="empty" style="padding:6px 0">Cruzá lo que dice ARCA con lo cargado en Odoo.</p></div><button class="btn lite" data-fa="cnback">← Pagos</button></div>';
+ var up=function(w,t,sub){var L=CN[w];return '<div class="card cnup'+(L?' ok':'')+'"><h3>'+t+'</h3><p class="hint">'+sub+'</p>'+(L?'<p class="cnf"><b>'+esc(CN[w+'n'])+'</b><span>'+L.rows.length+' filas</span></p>':'')+'<button class="btn '+(L?'lite':'c')+'" data-fa="cnpick" data-w="'+w+'">'+(L?'Cambiar archivo':'Elegir Excel')+'</button><input type="file" id="cn'+w+'" accept=".xlsx,.xls" hidden></div>'};
+ h+='<div class="cnups">'+up('a','1 · ARCA','El Excel de comprobantes recibidos.')+up('o','2 · Odoo','El Excel de facturas de proveedor.')+'</div>';
+ if(!R)return h+(CN.a||CN.o?'<p class="empty">Falta subir el otro archivo para conciliar.</p>':'<p class="empty">Subí los dos archivos tal como los descargás, sin modificarlos.</p>');
+ var T=R.tot,k=function(c,t,n,m){return '<div class="cnk '+c+'"><span>'+t+'</span><b>'+n+'</b><small>'+esc(money(m))+'</small></div>'};
+ h+='<div class="cnks">'+k('ok','Conciliadas',R.conc.length,T.conc)+k('wo','Faltan en Odoo',R.faltaOdoo.length,T.faltaOdoo)+k('wa','Faltan en ARCA',R.faltaArca.length,T.faltaArca)+'</div>'
+ +'<div class="cniva"><div><span>IVA en Odoo</span><b>'+esc(money(T.ivaOdoo))+'</b></div><div><span>IVA en ARCA</span><b>'+esc(money(T.ivaArca))+'</b></div><div class="'+(Math.abs(T.difIva)<1?'':'bad')+'"><span>Diferencia (ARCA − Odoo)</span><b>'+esc(money(T.difIva))+'</b></div></div>'
+ +'<div class="seg stabs">'+[['conc','Conciliadas',R.conc.length],['fo','Faltan en Odoo',R.faltaOdoo.length],['fa','Faltan en ARCA',R.faltaArca.length]].map(function(t){return '<button data-fa="cntab" data-t="'+t[0]+'" class="'+(CN.tab===t[0]?'on':'')+'">'+t[1]+' · '+t[2]+'</button>'}).join('')+'</div>'
+ +'<div class="card">'+cnRows(CN.tab==='fo'?R.faltaOdoo:CN.tab==='fa'?R.faltaArca:R.conc)+'</div>'
+ +'<div class="acts" style="justify-content:flex-start;margin-top:14px"><button class="btn c" data-fa="cnxls">Descargar Excel</button><button class="btn lite" data-fa="cnreset">Empezar de nuevo</button></div>';
+ return h}
+function cnExport(){if(!CN.res)return;loadXlsx().then(function(X){var H=FinConc.armarHojas(CN.res),wb=X.utils.book_new();
+ var w1=X.utils.aoa_to_sheet(H.conciliacion);w1['!cols']=FinConc.COLS.map(function(c){return {wch:c==='NOMBRE'||c==='FACTURA'?30:c==='FECHA'?12:15}});
+ Object.keys(w1).forEach(function(a){if(a[0]==='!')return;var c=X.utils.decode_cell(a);if(typeof w1[a].v==='number'&&c.c>=4)w1[a].z='$#,##0.00;[Red]-$#,##0.00'});
+ var w2=X.utils.aoa_to_sheet(H.resumen);w2['!cols']=[{wch:38},{wch:20}];
+ Object.keys(w2).forEach(function(a){if(a[0]!=='!'&&typeof w2[a].v==='number'&&X.utils.decode_cell(a).r>=7)w2[a].z='$#,##0.00;[Red]-$#,##0.00'});
+ X.utils.book_append_sheet(wb,w1,'Conciliacion');X.utils.book_append_sheet(wb,w2,'Resumen');X.writeFile(wb,'Resultado_Conciliacion_IVA.xlsx');toast('Excel descargado')}).catch(function(){toast('No pude generar el Excel')})}
 /* ===== MES ===== */
 function vMes(){var y=CAL.getFullYear(),m=CAL.getMonth(),first=new Date(y,m,1),off=(first.getDay()+6)%7,L=dim(y,m),T=today();
  var h='<div class="mhead"><h2>'+MON[m]+' <i>'+y+'</i></h2><div class="nav"><button class="btn lite sq" data-act="mprev" aria-label="Mes anterior">‹</button><button class="btn lite s" data-act="mtoday">Hoy</button><button class="btn lite sq" data-act="mnext" aria-label="Mes siguiente">›</button></div></div><div class="cal">';
@@ -240,7 +266,7 @@ function vPago(){var T=today(),pend=S.pagos.filter(function(p){return p.estado!=
  var wk=iso(addD(new Date(),7)),sem=pend.filter(function(p){return p.fprog&&p.fprog>=T&&p.fprog<=wk}),atr=pend.filter(function(p){return p.fprog&&p.fprog<T}),mes=today().slice(0,7),pg=S.pagos.filter(function(p){return p.estado==='pagado'&&(p.fprog||'').slice(0,7)===mes});
  var L=pagosFilt(),by={},ks=[];L.forEach(function(p){var k=PF.est==='hist'?((p.fpago||p.fprog||'sin').slice(0,10)):(p.fprog||'sin');if(!by[k]){by[k]=[];ks.push(k)}by[k].push(p)});
  var nsel=Object.keys(SEL).filter(function(k){return SEL[k]}).length,selSum=sum(S.pagos.filter(function(p){return SEL[p.id]}));
- var h='<div class="head"><div><h2 style="font-size:clamp(34px,6vw,56px)">Pagos</h2><p class="empty" style="padding:6px 0">Subí la factura y Finish lee los datos.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn lite" data-fa="pexp">Exportar Excel</button><button class="btn lite" data-fa="manual">Pago manual</button><button class="btn c" data-fa="upload">'+ico('up',2.4).replace('<svg','<svg width="18" height="18"')+' Subir factura PDF</button></div></div>'
+ var h='<div class="head"><div><h2 style="font-size:clamp(34px,6vw,56px)">Pagos</h2><p class="empty" style="padding:6px 0">Subí la factura y Finish lee los datos.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn lite" data-fa="goconc">Conciliar IVA</button><button class="btn lite" data-fa="pexp">Exportar Excel</button><button class="btn lite" data-fa="manual">Pago manual</button><button class="btn c" data-fa="upload">'+ico('up',2.4).replace('<svg','<svg width="18" height="18"')+' Subir factura PDF</button></div></div>'
  +'<input type="file" id="pdfin" accept="application/pdf,.pdf" hidden><div id="inl"></div>'
  +(INL?'':'<div class="drop" id="drop"><div>'+ico('up',1.6)+'</div><div><b>Soltá la factura acá</b><span>PDF de factura, VEP o servicio. Leo el CUIT, el monto, el número y el vencimiento.</span></div></div>')
  +'<div class="paybar"><div class="a"><span>Por pagar</span><b>'+money(sum(pend))+'</b></div><div><span>Próximos 7 días</span><b>'+money(sum(sem))+'</b></div><div class="'+(atr.length?'bad':'')+'"><span>Vencidos sin pagar</span><b>'+money(sum(atr))+'</b></div><div><span>Pagado este mes</span><b>'+money(sum(pg))+'</b></div></div>'
@@ -378,6 +404,7 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-fa]'
  else if(a==='banadd'){var s=$('#bs').value,bn=$('#bn').value.trim();if(!s||!bn){toast('Elegí sociedad y escribí el banco');return}S.bancos.push({id:uid(),sid:s,nombre:bn});save();render()}
  else if(a==='bandel'){S.bancos=S.bancos.filter(function(x){return x.id!==d.id});save();render()}
  else if(a==='pexp')exportPagos();
+ else if(a==='goconc')go('conc');else if(a==='cnback')go('pago');else if(a==='cnpick')$('#cn'+d.w).click();else if(a==='cntab'){CN.tab=d.t;render()}else if(a==='cnreset'){CN={a:null,o:null,an:'',on:'',res:null,tab:'conc'};render()}else if(a==='cnxls')cnExport();
  else if(a==='dbsetup'){var pw=document.getElementById('dbpw').value;if(!pw)return;syncApi('setup_db',{name:'u748338755_finish',user:'u748338755_finish',pass:pw}).then(function(j){if(j.status===200){toast('Base conectada');SYNC.on=true;SYNC.state='local';syncInit();setTimeout(render,600)}else toast(j.status===422?'No pude entrar con esa contraseña':'No se pudo conectar la base')})}
  else if(a==='stab'){ST=d.t;render()}
  else if(a==='pvnew'){PV.edit='new';PV.q='';PV.pg=0;render();var f=$('#pe_n');if(f)f.focus()}
@@ -392,7 +419,7 @@ document.addEventListener('click',function(e){var b=e.target.closest('[data-fa]'
   PV.edit=null;save();render();toast('Proveedor guardado')}
  else if(a==='pvdel'){var pd2=byId(S.prov,d.id);if(confirm('¿Borrar a '+(pd2?pd2.nombre:'este proveedor')+'? No se puede deshacer.')){S.prov=S.prov.filter(function(x){return x.id!==d.id});PV.edit=null;save();render();toast('Proveedor borrado')}}
  else if(a==='pvall'){if(confirm('¿Borrar los '+S.prov.length+' proveedores? No se puede deshacer.')){S.prov=[];PV.edit=null;PV.q='';save();render()}}});
-function finAfter(){if(INL)INL.mount();var pvq=$('#pvq');if(pvq)pvq.addEventListener('input',function(){PV.q=pvq.value;PV.pg=0;$('#pvwrap').innerHTML=pvBody()});var xi=$('#xlin');if(xi)xi.addEventListener('change',function(e){var fl=e.target.files[0];e.target.value='';importProv(fl)});var f=$('#pdfin');if(f)f.addEventListener('change',function(e){var fl=e.target.files[0];e.target.value='';subirPDF(fl)});
+function finAfter(){['a','o'].forEach(function(w){var i=$('#cn'+w);if(i)i.addEventListener('change',function(e){var fl=e.target.files[0];e.target.value='';cnLoad(w,fl)})});if(INL)INL.mount();var pvq=$('#pvq');if(pvq)pvq.addEventListener('input',function(){PV.q=pvq.value;PV.pg=0;$('#pvwrap').innerHTML=pvBody()});var xi=$('#xlin');if(xi)xi.addEventListener('change',function(e){var fl=e.target.files[0];e.target.value='';importProv(fl)});var f=$('#pdfin');if(f)f.addEventListener('change',function(e){var fl=e.target.files[0];e.target.value='';subirPDF(fl)});
  var dz=$('#drop');if(dz){['dragenter','dragover'].forEach(function(n){dz.addEventListener(n,function(e){e.preventDefault();dz.classList.add('on')})});['dragleave','drop'].forEach(function(n){dz.addEventListener(n,function(e){e.preventDefault();dz.classList.remove('on')})});dz.addEventListener('drop',function(e){subirPDF(e.dataTransfer.files[0])});dz.addEventListener('click',function(){f.click()})}
  var pq=$('#pq');if(pq)pq.addEventListener('input',function(){PF.q=pq.value;var p=pq.selectionStart;render();var n=$('#pq');n.focus();n.setSelectionRange(p,p)});
  var s1=$('#pfs');if(s1)s1.addEventListener('change',function(){PF.soc=s1.value;render()});var s2=$('#pff');if(s2)s2.addEventListener('change',function(){PF.forma=s2.value;render()});var s3=$('#pfd');if(s3)s3.addEventListener('change',function(){PF.fecha=s3.value;render()});
