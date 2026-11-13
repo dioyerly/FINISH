@@ -326,3 +326,4 @@ textarea.i{resize:vertical;min-height:86px}
 /* barra inferior con 7 pestañas: en celulares chicos solo íconos */
 @media(max-width:560px){.dock{gap:2px;padding:6px}.dock button{padding:9px 10px;gap:6px}.dock .plus{padding:11px;margin:0 3px}}
 @media(max-width:430px){.dock button.on span{display:none}.dock button{padding:8px}}
+@media(max-width:370px){.dock{padding:5px}.dock button{padding:7px}.dock button svg{width:18px;height:18px}.dock .plus{padding:10px;margin:0 2px}}
