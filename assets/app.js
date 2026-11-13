@@ -16,31 +16,8 @@ function uid(){return Math.random().toString(36).slice(2,9)}
 function money(n){return '$ '+Math.round(n).toLocaleString('es-AR')}
 function fmtD(s,o){return pd(s).toLocaleDateString('es-AR',o||{weekday:'long',day:'numeric',month:'long'})}
 /* ===== estado ===== */
-var KEY='finish_v1',S=null;
-function seed(){var t=new Date(),T=iso(t);var y=iso(addD(t,-1));
- var me={id:'me',name:'Yo',email:'',me:true},ana={id:'p1',name:'Ana (equipo)',email:'ana@ejemplo.com'},con={id:'p2',name:'Contador',email:'contador@ejemplo.com'};
- var B=iso(addD(t,-75));var R=function(o){var d=Object.assign({id:uid(),note:'',cat:'trabajo',type:'once',date:T,time:'09:00',days:[],dom:1,dom2:15,until:'',lead:60,mail:false,to:[],amt:''},o);if(d.type!=='once'&&!o.date)d.date=B;return d};
- return {demo:true,cfg:{name:'Dio',lead:60,digest:true,digestH:'07:30'},ppl:[me,ana,con],
- rem:[R({t:'Café y repaso del día',cat:'personal',type:'daily',time:'08:30'}),
-  R({t:'Reunión semanal de equipo',type:'weekly',days:[1],time:'09:30',mail:true,to:['me','p1'],lead:30}),
-  R({t:'Revisar métricas de las apps',type:'weekly',days:[5],time:'16:00'}),
-  R({t:'Liquidar sueldos',type:'bimonthly',dom:1,dom2:15,time:'09:00',mail:true,to:['me','p2'],lead:1440,cat:'pago',amt:520000}),
-  R({t:'Cuota de monotributo',cat:'pago',type:'monthly',dom:20,time:'09:00',amt:42000,mail:true,to:['me'],lead:1440}),
-  R({t:'Respaldo de datos',cat:'personal',type:'daily',time:'21:00'}),
-  R({t:'Llamar al contador',date:T,time:'15:30',mail:true,to:['me'],lead:30}),
-  R({t:'Entrega landing de agendas',date:iso(addD(t,1)),time:'12:00',mail:true,to:['me','p1'],lead:120}),
-  R({t:'Renovar dominio estrategia.site',cat:'pago',date:iso(addD(t,9)),time:'11:00',amt:28000,mail:true,to:['me'],lead:1440}),
-  R({t:'Enviar presupuesto a Café Aurora',date:y,time:'17:00'})],
- done:{},day:{},
- soc:[{id:'s1',nombre:'Constructora Norte S.A.',cuit:'30-71234567-1'},{id:'s2',nombre:'Servicios Sur S.R.L.',cuit:'30-70987654-3'}],
- bancos:[{id:'b1',sid:'s1',nombre:'Banco Nación · CC 4455'},{id:'b2',sid:'s1',nombre:'Banco Galicia · CC 1122'},{id:'b3',sid:'s2',nombre:'Banco Santander · CC 9981'}],
- prov:[{id:'v1',nombre:'Ferretería Industrial S.A.',cuit:'30-61234567-8',cbu:'ferreteria.ind'},{id:'v2',nombre:'Logística Andina S.R.L.',cuit:'30-70111222-4',cbu:'0170001540000012345678'},{id:'v3',nombre:'Hormigones del Plata S.A.',cuit:'30-55667788-9',cbu:''}],
- pagos:[{id:'g1',sid:'s1',bid:'b1',pid:'v1',nro:'00003-00001021',oc:'OC-118',monto:742300,fvenc:iso(addD(t,3)),fprog:nextDow(2),tipo:'proveedor',forma:'Transferencia',cheque:'',desc:'',estado:'pendiente'},{id:'g2',sid:'s1',bid:'b2',pid:'v2',nro:'00012-00004477',oc:'',monto:318900,fvenc:iso(addD(t,5)),fprog:nextDow(4),tipo:'proveedor',forma:'Cheques / eCheqs',cheque:'88120344',desc:'',estado:'pendiente'},{id:'g3',sid:'s2',bid:'b3',pid:'v3',nro:'00001-00009812',oc:'OP-45',monto:1250000,fvenc:iso(addD(t,-2)),fprog:iso(addD(t,-1)),tipo:'proveedor',forma:'Transferencia',cheque:'',desc:'',estado:'pendiente'},{id:'g4',sid:'s1',bid:'b1',pid:'',nro:'CTE-4455667',oc:'',monto:98765,fvenc:iso(addD(t,6)),fprog:nextDow(4),tipo:'servicio',forma:'Servicios / Pagos Directos',cheque:'',desc:'Edenor S.A.',estado:'pendiente'},{id:'g5',sid:'s1',bid:'b1',pid:'v1',nro:'00003-00000987',oc:'',monto:210500,fvenc:iso(addD(t,-9)),fprog:iso(addD(t,-6)),tipo:'proveedor',forma:'Transferencia',cheque:'',desc:'',estado:'pagado'}],
- plans:[{id:uid(),t:'Lanzar app de presupuestos',goal:'Publicar, subir a TikTok y conseguir los primeros 5 clientes',due:iso(addD(t,21)),c:PCOL[0],steps:[{id:uid(),t:'Ajustes y diseño del presupuesto',done:true},{id:uid(),t:'Módulo de AFIP en el hosting',done:false},{id:uid(),t:'Video para TikTok',done:false},{id:uid(),t:'Publicar en la tienda',done:false}]},
- {id:uid(),t:'Orden contable del mes',goal:'Cerrar facturas y pagos antes del 30',due:iso(addD(t,16)),c:PCOL[2],steps:[{id:uid(),t:'Juntar facturas recibidas',done:true},{id:uid(),t:'Cargar pagos a proveedores',done:true},{id:uid(),t:'Conciliar bancos',done:false}]}],
- notes:[{id:uid(),t:'Ideas de contenido',body:'• Antes y después de una landing\n• Cómo organizo mis recordatorios\n• 3 errores al cobrar online',c:NCOL[0],pin:true,ts:Date.now()},
- {id:uid(),t:'Datos del hosting',body:'Revisar vencimiento y backups cada mes.',c:NCOL[3],pin:false,ts:Date.now()-1e6},
- {id:uid(),t:'Llamadas pendientes',body:'Proveedor de dominio\nContador\nCliente de la cafetería',c:NCOL[1],pin:false,ts:Date.now()-2e6}]}}
+var KEY='finish_v2',S=null;
+function seed(){return {demo:false,cfg:{name:'',lead:60,digest:true,digestH:'07:30',payDays:[2,4]},ppl:[{id:'me',name:'Yo',email:'',me:true}],rem:[],done:{},day:{},soc:[],bancos:[],prov:[],pagos:[],plans:[],notes:[]}}
 function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}if(!S||!S.rem)S=seed();S.day=S.day||{};S.done=S.done||{};['soc','bancos','prov','pagos'].forEach(function(k){S[k]=S[k]||[]})}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ===== recurrencia ===== */
@@ -88,7 +65,7 @@ function vHoy(){var T=today(),list=occ(T),n=new Date(),d=list.filter(function(o)
  var rib='';for(var i=0;i<14;i++){var dt=addD(n,i),ds=iso(dt),oc=occ(ds),pay=oc.some(function(o){return o.r.cat==='pago'});rib+='<button class="day'+(i===0?' today':'')+(pay?' pay':'')+'" data-act="day" data-d="'+ds+'"><small>'+DOWS[dt.getDay()]+'</small><b>'+dt.getDate()+'</b><i>'+oc.slice(0,3).map(function(o){return '<u style="background:'+cc(o.r)+'"></u>'}).join('')+'</i></button>'}
  var nxt='',cnt=0;for(var k=1;k<=7&&cnt<8;k++){var ds2=iso(addD(n,k));occ(ds2).forEach(function(o){if(cnt>=8||o.r.type==='daily')return;cnt++;nxt+='<button class="rw" style="--c:'+cc(o.r)+'" data-act="edit" data-id="'+o.r.id+'"><span class="dd">'+DOWS[pd(ds2).getDay()]+'<b>'+pd(ds2).getDate()+'</b></span><i></i><span class="tx" style="flex:1;min-width:0"><div class="tt">'+esc(o.r.t)+'</div><div class="meta"><span>'+esc(o.r.time)+'</span>'+(o.r.amt?'<span class="amt">'+money(o.r.amt)+'</span>':'')+'</div></span></button>'})}
  var mails=outbox(1).length;
- return '<div class="head"><div class="bigd"><b>'+n.getDate()+'</b><div><small>'+DOWL[n.getDay()]+'</small><span>'+MON[n.getMonth()]+'<br>'+n.getFullYear()+'</span></div></div><div class="hi"><p>'+greet()+', <b>'+esc(S.cfg.name||'')+'</b>.<br>'+(list.length?(d===list.length?'Día completo. Bien hecho.':'Te quedan '+(list.length-d)+' por hacer hoy.'):'Hoy no tenés nada agendado.')+'</p></div></div>'
+ return '<div class="head"><div class="bigd"><b>'+n.getDate()+'</b><div><small>'+DOWL[n.getDay()]+'</small><span>'+MON[n.getMonth()]+'<br>'+n.getFullYear()+'</span></div></div><div class="hi"><p>'+greet()+(S.cfg.name?', <b>'+esc(S.cfg.name)+'</b>':'')+'.<br>'+(list.length?(d===list.length?'Día completo. Bien hecho.':'Te quedan '+(list.length-d)+' por hacer hoy.'):'Hoy no tenés nada agendado.')+'</p></div></div>'
  +'<div class="qa"><label><span class="sl">+</span><input id="qa" placeholder="Escribí natural: pagar luz martes y jueves 10:00 @ana" autocomplete="off"><kbd>Enter</kbd></label><div class="chips" id="qchips"></div></div>'
  +'<div class="ribbon">'+rib+'</div>'
  +'<div class="grid2"><div><div class="card"><div class="dial">'+dial(list)+'<div class="mid"><b>'+d+'<i>/'+list.length+'</i></b><small>hechos hoy</small></div></div>'
