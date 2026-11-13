@@ -272,3 +272,4 @@ textarea.i{resize:vertical;min-height:86px}
 .pvpg{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-top:14px;border-top:1px dashed var(--line);font-size:13px;color:var(--mut)}
 .pvpg button:disabled{opacity:.4;cursor:default}
 @media(max-width:760px){.pvr{grid-template-columns:36px minmax(0,1fr);row-gap:4px}.pvc,.pvb{grid-column:2}.pva{grid-column:2;margin-top:4px}}
+.meta .mv{background:#fff4d6;color:#8a5a00;border-radius:999px;padding:1px 9px;font-weight:600;font-size:11px}
