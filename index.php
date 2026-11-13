@@ -107,7 +107,7 @@ if ($logged) {
     $_SESSION['last'] = time();
     $html = (string)file_get_contents(__DIR__ . '/private/app.html');
     foreach (['assets/app.css', 'assets/app.js'] as $a) { $v = @filemtime(__DIR__ . '/' . $a) ?: 1; $html = str_replace($a . '"', $a . '?v=' . $v . '"', $html); }
-    $html = str_replace('<head>', '<head><base href="' . h($base) . '">', $html);
+    $html = str_replace('<head>', '<head><base href="' . h($base) . '"><meta name="finish-csrf" content="' . h($_SESSION['csrf']) . '">', $html);
     $html = str_replace('</body>', '<a class="salir" href="' . h($base) . '?salir=1">Salir</a></body>', $html);
     echo $html; exit;
 }

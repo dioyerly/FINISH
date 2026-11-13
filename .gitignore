@@ -3,3 +3,4 @@ private/auth.php
 tools/out/
 *.bak
 node_modules/
+private/db.php
