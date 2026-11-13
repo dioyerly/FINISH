@@ -1,0 +1,5 @@
+private/auth.php
+.finish_auth.php
+tools/out/
+*.bak
+node_modules/

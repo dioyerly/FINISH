@@ -1,0 +1,16 @@
+Options -Indexes
+# la app solo se entrega por index.php (con sesión). Nadie entra directo a private/
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^private/ - [F,L]
+  RewriteRule ^tools/ - [F,L]
+</IfModule>
+<FilesMatch "\.(md|json|py|bak)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
