@@ -131,12 +131,27 @@ function vConc(){var R=CN.res,h='<div class="head"><div><h2 style="font-size:cla
  +'<div class="card">'+cnRows(CN.tab==='fo'?R.faltaOdoo:CN.tab==='fa'?R.faltaArca:R.conc)+'</div>'
  +'<div class="acts" style="justify-content:flex-start;margin-top:14px"><button class="btn c" data-fa="cnxls">Descargar Excel</button><button class="btn lite" data-fa="cnreset">Empezar de nuevo</button></div>';
  return h}
-function cnExport(){if(!CN.res)return;loadXlsx().then(function(X){var H=FinConc.armarHojas(CN.res),wb=X.utils.book_new();
- var w1=X.utils.aoa_to_sheet(H.conciliacion);w1['!cols']=FinConc.COLS.map(function(c){return {wch:c==='NOMBRE'||c==='FACTURA'?30:c==='FECHA'?12:15}});
- Object.keys(w1).forEach(function(a){if(a[0]==='!')return;var c=X.utils.decode_cell(a);if(typeof w1[a].v==='number'&&c.c>=4)w1[a].z='$#,##0.00;[Red]-$#,##0.00'});
- var w2=X.utils.aoa_to_sheet(H.resumen);w2['!cols']=[{wch:38},{wch:20}];
- Object.keys(w2).forEach(function(a){if(a[0]!=='!'&&typeof w2[a].v==='number'&&X.utils.decode_cell(a).r>=7)w2[a].z='$#,##0.00;[Red]-$#,##0.00'});
- X.utils.book_append_sheet(wb,w1,'Conciliacion');X.utils.book_append_sheet(wb,w2,'Resumen');X.writeFile(wb,'Resultado_Conciliacion_IVA.xlsx');toast('Excel descargado')}).catch(function(){toast('No pude generar el Excel')})}
+var EJP=null;
+function loadExcelJs(){if(window.ExcelJS)return Promise.resolve(window.ExcelJS);if(EJP)return EJP;EJP=new Promise(function(res,rej){var sc=document.createElement('script'),el=$('#ejl');sc.src=el?URL.createObjectURL(new Blob([b2u(el.textContent)],{type:'text/javascript'})):'assets/vendor/exceljs.min.js';sc.onload=function(){res(window.ExcelJS)};sc.onerror=function(){EJP=null;rej()};document.head.appendChild(sc)});return EJP}
+function cnExport(){if(!CN.res)return;loadExcelJs().then(function(E){var R=CN.res,T=R.tot,C=FinConc.COLS,N=C.length,wb=new E.Workbook(),ws=wb.addWorksheet('Conciliacion',{views:[{state:'frozen',ySplit:0}]}),MON='$#,##0.00;[Red]-$#,##0.00',
+ INK='FF0E1120',BONE='FFE8ECF5',LINE='FFD9DEEB',bd={bottom:{style:'thin',color:{argb:LINE}}},WH={color:{argb:'FFFFFFFF'},bold:true},
+ fill=function(c){return {type:'pattern',pattern:'solid',fgColor:{argb:c}}},
+ TOR={type:'gradient',gradient:'angle',degree:0,stops:[{position:0,color:{argb:'FF4F7CFF'}},{position:.28,color:{argb:'FF8A5CFF'}},{position:.56,color:{argb:'FFD24FE0'}},{position:.74,color:{argb:'FFFF62B4'}},{position:1,color:{argb:'FF2FC4D9'}}]};
+ C.forEach(function(c,i){ws.getColumn(i+1).width=c==='NOMBRE'||c==='FACTURA'?30:c==='FECHA'?12:c==='CUIT'?15:16});
+ function sec(titulo,lista,color){var r=ws.addRow([titulo]);ws.mergeCells(r.number,1,r.number,N);var t=r.getCell(1);t.fill=fill(color);t.font=Object.assign({size:13},WH);t.alignment={vertical:'middle'};r.height=26;
+  var h=ws.addRow(C);h.height=30;h.eachCell(function(c){c.fill=fill(INK);c.font=WH;c.alignment={horizontal:'center',vertical:'middle',wrapText:true};c.border=bd});
+  if(!lista.length){var e=ws.addRow(['Sin registros']);ws.mergeCells(e.number,1,e.number,N);e.getCell(1).font={italic:true,color:{argb:'FF6A7186'}}}
+  lista.forEach(function(x,k){var row=ws.addRow(C.map(function(c){return c==='FECHA'?FinConc.fechaTxt(x[c]):c==='CUIT'?x.CUIT_CLEAN:x[c]}));row.eachCell({includeEmpty:true},function(c,n){c.border=bd;c.alignment={vertical:'middle'};if(n>=5)c.numFmt=MON;if(k%2)c.fill=fill('FFF6F8FC')})});
+  var tr=ws.addRow(C.map(function(c,i){return i===0?'TOTAL DE LA SECCION':i===N-1?lista.reduce(function(a,y){return a+y.TOTAL},0):''}));tr.eachCell({includeEmpty:true},function(c,n){c.fill=fill(BONE);c.font={bold:true};c.border=bd;if(n===N)c.numFmt=MON});ws.addRow([])}
+ sec('FACTURAS CONCILIADAS - PRESENTES EN ODOO Y ARCA',R.conc,'FF2FB58A');sec('FALTAN EN ODOO - CARGAR EN EL SISTEMA',R.faltaOdoo,'FFE0459F');sec('FALTAN EN ARCA - REVISAR COMPROBANTES',R.faltaArca,'FFD23A1D');
+ var rs=wb.addWorksheet('Resumen');rs.getColumn(1).width=38;rs.getColumn(2).width=22;
+ var t=rs.addRow(['CONCILIACION IVA - RESUMEN EJECUTIVO']);rs.mergeCells(1,1,1,2);t.height=32;t.getCell(1).fill=TOR;t.getCell(1).font={color:{argb:'FFFFFFFF'},bold:true,size:15};t.getCell(1).alignment={horizontal:'center',vertical:'middle'};
+ function hdr(a,b){var r=rs.addRow([a,b]);r.eachCell(function(c){c.fill=fill(INK);c.font=WH});return r}
+ function lin(a,b,col,money){var r=rs.addRow([a,b]);r.eachCell(function(c){c.border=bd});if(col){r.getCell(1).fill=fill(col);r.getCell(1).font=WH}if(money)r.getCell(2).numFmt=MON;r.getCell(2).alignment={horizontal:'right'};return r}
+ hdr('Estado','Cantidad');lin('Conciliadas (en ambos)',R.conc.length,'FF2FB58A');lin('Faltan en Odoo',R.faltaOdoo.length,'FFE0459F');lin('Faltan en ARCA',R.faltaArca.length,'FFD23A1D');rs.addRow([]);
+ hdr('Concepto','Importe');lin('Total conciliadas',T.conc,null,1);lin('Total faltan en Odoo',T.faltaOdoo,null,1);lin('Total faltan en ARCA',T.faltaArca,null,1);rs.addRow([]);
+ lin('IVA total Odoo',T.ivaOdoo,null,1);lin('IVA total ARCA',T.ivaArca,null,1);var d=lin('Diferencia IVA (ARCA - Odoo)',T.difIva,null,1);d.eachCell(function(c){c.fill=fill(BONE);c.font={bold:true}});
+ return wb.xlsx.writeBuffer()}).then(function(buf){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download='Resultado_Conciliacion_IVA.xlsx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);toast('Excel descargado')}).catch(function(){toast('No pude generar el Excel')})}
 /* ===== MES ===== */
 function vMes(){var y=CAL.getFullYear(),m=CAL.getMonth(),first=new Date(y,m,1),off=(first.getDay()+6)%7,L=dim(y,m),T=today();
  var h='<div class="mhead"><h2>'+MON[m]+' <i>'+y+'</i></h2><div class="nav"><button class="btn lite sq" data-act="mprev" aria-label="Mes anterior">‹</button><button class="btn lite s" data-act="mtoday">Hoy</button><button class="btn lite sq" data-act="mnext" aria-label="Mes siguiente">›</button></div></div><div class="cal">';
