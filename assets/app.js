@@ -3,9 +3,9 @@ var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){retu
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 var DOWL=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],DOWS=['dom','lun','mar','mié','jue','vie','sáb'],DOWI=['D','L','M','X','J','V','S'];
 var MON=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-var CATS={trabajo:{n:'Trabajo',c:'#3b5bdb'},personal:{n:'Personal',c:'#0f7b6c'},pago:{n:'Pago',c:'#d9822b'},ideas:{n:'Otro',c:'#8b3f8f'},venc:{n:'Vencimiento',c:'#c2410c'},tarea:{n:'Tarea',c:'#0b7285'},record:{n:'Recordatorio',c:'#6741d9'}};
+var CATS={trabajo:{n:'Trabajo',c:'#3b5bdb'},personal:{n:'Personal',c:'#0f7b6c'},pago:{n:'Pago',c:'#2aa7c9'},ideas:{n:'Otro',c:'#8b3f8f'},venc:{n:'Vencimiento',c:'#e0459f'},tarea:{n:'Tarea',c:'#0b7285'},record:{n:'Recordatorio',c:'#6741d9'}};
 var NCOL=['#f6d86b','#f4a99a','#a9d6c4','#b9c6f5','#e2c3ea','#ffffff'];
-var PCOL=['#3b5bdb','#0f7b6c','#d9822b','#8b3f8f','#ff5a3c'];
+var PCOL=['#3b5bdb','#0f7b6c','#2aa7c9','#8b3f8f','#8a5cff'];
 function pad(n){return n<10?'0'+n:''+n}
 function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function pd(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])}
@@ -67,7 +67,7 @@ function dial(items){var W=420,cx=210,cy=214,r=168,now=new Date(),nt=now.getHour
  [6,9,12,15,18,21,24].forEach(function(h){var p=pt(h,r-34);s+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+4).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#9aa1b6" font-family="SG,sans-serif">'+(h===24?'24':h)+'</text>'});
  var last=-9,lv=0;items.forEach(function(o){var t=+o.r.time.slice(0,2)+(+o.r.time.slice(3,5))/60;lv=(t-last<.7)?lv+1:0;last=t;var p=pt(t,r+lv*24);
   s+='<g><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="9" fill="'+(o.done?'#ffffff':cc(o.r))+'" stroke="'+(o.done?'#9aa1b6':'#ffffff')+'" stroke-width="3"/>'+(o.done?'<path d="m'+(p[0]-3.5).toFixed(1)+' '+(p[1]).toFixed(1)+' 2.5 2.5 4.5-5" stroke="#0f7b6c" stroke-width="2" fill="none" stroke-linecap="round"/>':'')+'</g>'});
- if(nt>=6&&nt<=24)s+='<circle class="pulse" cx="'+np[0].toFixed(1)+'" cy="'+np[1].toFixed(1)+'" r="7" fill="#ff5a3c"/><circle cx="'+np[0].toFixed(1)+'" cy="'+np[1].toFixed(1)+'" r="8" fill="#ff5a3c" stroke="#ffffff" stroke-width="3"/>';
+ if(nt>=6&&nt<=24)s+='<circle class="pulse" cx="'+np[0].toFixed(1)+'" cy="'+np[1].toFixed(1)+'" r="7" fill="#8a5cff"/><circle cx="'+np[0].toFixed(1)+'" cy="'+np[1].toFixed(1)+'" r="8" fill="#8a5cff" stroke="#ffffff" stroke-width="3"/>';
  return s+'</svg>'}
 function itemHTML(o,showDate){var r=o.r,c=cc(r);return '<div class="it'+(o.done?' done':'')+'" style="--c:'+c+'"><div class="tm">'+(showDate?esc(DOWS[pd(o.date).getDay()]+' '+pd(o.date).getDate())+'<br>':'')+esc(r.time)+'</div><div class="ln"><b></b></div>'
  +'<div class="bd"><button class="ck" data-act="tog" data-k="'+esc(o.key)+'" aria-label="Marcar hecho">'+CHK+'</button><button class="tx" style="text-align:left" data-act="edit" data-id="'+r.id+'"><div class="tt">'+esc(r.t)+'</div><div class="meta"><span>'+esc(CATS[r.cat]?CATS[r.cat].n:'')+'</span>'+(r.type!=='once'?'<span>↻ '+esc(repLabel(r))+'</span>':'')+(r.mail?'<span>✉ '+r.to.length+'</span>':'')+(r.amt?'<span class="amt">'+money(r.amt)+'</span>':'')+mvTag(o)+'</div></button></div></div>'}
