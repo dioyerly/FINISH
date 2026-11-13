@@ -273,3 +273,4 @@ textarea.i{resize:vertical;min-height:86px}
 .pvpg button:disabled{opacity:.4;cursor:default}
 @media(max-width:760px){.pvr{grid-template-columns:36px minmax(0,1fr);row-gap:4px}.pvc,.pvb{grid-column:2}.pva{grid-column:2;margin-top:4px}}
 .meta .mv{background:#fff4d6;color:#8a5a00;border-radius:999px;padding:1px 9px;font-weight:600;font-size:11px}
+.cell .ev{cursor:pointer}.cell .ev:hover{filter:brightness(.95);outline:2px solid var(--c)}

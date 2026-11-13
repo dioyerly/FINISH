@@ -89,7 +89,7 @@ function vMes(){var y=CAL.getFullYear(),m=CAL.getMonth(),first=new Date(y,m,1),o
  ['lun','mar','mié','jue','vie','sáb','dom'].forEach(function(x){h+='<div class="dw">'+x+'</div>'});
  var total=Math.ceil((off+L)/7)*7;
  for(var i=0;i<total;i++){var dt=new Date(y,m,1-off+i),ds=iso(dt),out=dt.getMonth()!==m,oc=out?[]:occ(ds),ev='',dots='';
-  oc.slice(0,3).forEach(function(o){ev+='<span class="ev'+(o.done?' dn':'')+'" style="--c:'+cc(o.r)+'">'+esc(o.r.time)+' '+esc(o.r.t)+'</span>'});
+  oc.slice(0,3).forEach(function(o){ev+='<span class="ev'+(o.done?' dn':'')+'" data-act="edit" data-id="'+esc(o.r.id)+'" title="Tocar para editar" style="--c:'+cc(o.r)+'">'+esc(o.r.time)+' '+esc(o.r.t)+'</span>'});
   oc.forEach(function(o){dots+='<u style="--c:'+cc(o.r)+'"></u>'});
   var payd=oc.some(function(o){return o.r.cat==='pago'});
   h+='<button class="cell'+(out?' out':'')+(ds===T?' today':'')+(S.day[ds]?' hasnote':'')+'" '+(out?'':'data-act="day" data-d="'+ds+'"')+'><div class="n"><span>'+dt.getDate()+'</span>'+(payd?'<em>PAGO</em>':'')+'</div>'+ev+(oc.length>3?'<span class="more">+'+(oc.length-3)+' más</span>':'')+'<div class="dots">'+dots.slice(0,400)+'</div></button>'}
