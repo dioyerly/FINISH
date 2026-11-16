@@ -91,9 +91,19 @@ function dial(items){var W=420,cx=210,cy=214,r=168,now=new Date(),nt=now.getHour
  s+='<path d="M'+(cx-r)+' '+cy+'A'+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="#dde2ef" stroke-width="16" stroke-linecap="round"/>';
  var np=pt(nt);if(nt>6)s+='<path class="arc" pathLength="100" d="M'+(cx-r)+' '+cy+'A'+r+' '+r+' 0 0 1 '+np[0].toFixed(1)+' '+np[1].toFixed(1)+'" fill="none" stroke="#0e1120" stroke-width="16" stroke-linecap="round"/>';
  [6,9,12,15,18,21,24].forEach(function(h){var p=pt(h,r-34);s+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+4).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#9aa1b6" font-family="SG,sans-serif">'+(h===24?'24':h)+'</text>'});
- var last=-9,lv=0;items.forEach(function(o){var t=+o.r.time.slice(0,2)+(+o.r.time.slice(3,5))/60;lv=(t-last<.7)?lv+1:0;last=t;var p=pt(t,r+lv*24);
-  s+='<g><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="9" fill="'+(o.done?'#ffffff':cc(o.r))+'" stroke="'+(o.done?'#9aa1b6':'#ffffff')+'" stroke-width="3"/>'+(o.done?'<path d="m'+(p[0]-3.5).toFixed(1)+' '+(p[1]).toFixed(1)+' 2.5 2.5 4.5-5" stroke="#0f7b6c" stroke-width="2" fill="none" stroke-linecap="round"/>':'')+'</g>'});
- if(nt>=6&&nt<=24)s+='<circle class="pulse" cx="'+np[0].toFixed(1)+'" cy="'+np[1].toFixed(1)+'" r="7" fill="#8a5cff"/><circle cx="'+np[0].toFixed(1)+'" cy="'+np[1].toFixed(1)+'" r="8" fill="#8a5cff" stroke="#ffffff" stroke-width="3"/>';
+ /* puntos siempre sobre el arco: si dos horarios quedan pegados se corren a lo largo del arco, no hacia afuera */
+ var G=.68,ts=items.map(function(o){return Math.max(6,Math.min(24,+o.r.time.slice(0,2)+(+o.r.time.slice(3,5))/60))}),ps=ts.slice(),i;
+ if(ps.length*G>18)G=18/ps.length;
+ for(i=1;i<ps.length;i++)if(ps[i]-ps[i-1]<G)ps[i]=ps[i-1]+G;
+ if(ps.length&&ps[ps.length-1]>24){ps[ps.length-1]=24;for(i=ps.length-2;i>=0;i--)if(ps[i+1]-ps[i]<G)ps[i]=ps[i+1]-G}
+ for(i=0;i<ps.length;i++){var lo=i?ps[i-1]+G:6,hi=i<ps.length-1?ps[i+1]-G:24,w=Math.max(lo,Math.min(hi,ts[i]));if(lo<=hi)ps[i]=w}
+ var dots='';items.forEach(function(o,k){var p=pt(ps[k]);
+  dots+='<g><title>'+esc(o.r.time+' · '+o.r.t)+'</title><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="9" fill="'+(o.done?'#ffffff':cc(o.r))+'" stroke="'+(o.done?'#9aa1b6':'#ffffff')+'" stroke-width="3"/>'+(o.done?'<path d="m'+(p[0]-3.5).toFixed(1)+' '+(p[1]).toFixed(1)+' 2.5 2.5 4.5-5" stroke="#0f7b6c" stroke-width="2" fill="none" stroke-linecap="round"/>':'')+'</g>'});
+ /* "ahora": aguja con la hora, distinta de los puntos de recordatorios */
+ if(nt>=6&&nt<=24){var n1=pt(nt,r-13),n2=pt(nt,r+13),n3=pt(nt,r+30),hh=pad(now.getHours())+':'+pad(now.getMinutes());
+  s+='<g class="now"><line x1="'+n1[0].toFixed(1)+'" y1="'+n1[1].toFixed(1)+'" x2="'+n2[0].toFixed(1)+'" y2="'+n2[1].toFixed(1)+'" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/><line x1="'+n1[0].toFixed(1)+'" y1="'+n1[1].toFixed(1)+'" x2="'+n2[0].toFixed(1)+'" y2="'+n2[1].toFixed(1)+'" stroke="#8a5cff" stroke-width="4" stroke-linecap="round"/>'
+   +'<text x="'+n3[0].toFixed(1)+'" y="'+(n3[1]+4).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#8a5cff" font-family="SG,sans-serif">'+hh+'</text></g>'}
+ s+=dots;
  return s+'</svg>'}
 function itemHTML(o,showDate){var r=o.r,c=cc(r);return '<div class="it'+(o.done?' done':'')+'" style="--c:'+c+'"><div class="tm">'+(showDate?esc(DOWS[pd(o.date).getDay()]+' '+pd(o.date).getDate())+'<br>':'')+esc(r.time)+'</div><div class="ln"><b></b></div>'
  +'<div class="bd"><button class="ck" data-act="tog" data-k="'+esc(o.key)+'" aria-label="Marcar hecho">'+CHK+'</button><button class="tx" style="text-align:left" data-act="edit" data-id="'+r.id+'"><div class="tt">'+esc(r.t)+'</div><div class="meta"><span>'+esc(CATS[r.cat]?CATS[r.cat].n:'')+'</span>'+(r.type!=='once'?'<span>↻ '+esc(repLabel(r))+'</span>':'')+(r.mail?'<span>✉ '+r.to.length+'</span>':'')+(r.amt?'<span class="amt">'+money(r.amt)+'</span>':'')+mvTag(o)+'</div></button></div></div>'}
