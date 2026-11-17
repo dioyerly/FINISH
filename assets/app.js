@@ -229,9 +229,9 @@ function vMes(){var y=CAL.getFullYear(),m=CAL.getMonth(),first=new Date(y,m,1),o
  var total=Math.ceil((off+L)/7)*7;
  for(var i=0;i<total;i++){var dt=new Date(y,m,1-off+i),ds=iso(dt),out=dt.getMonth()!==m,oc=out?[]:occ(ds),ev='',dots='';
   oc.slice(0,3).forEach(function(o){ev+='<span class="ev'+(o.done?' dn':'')+'" data-act="edit" data-id="'+esc(o.r.id)+'" title="Tocar para editar" style="--c:'+cc(o.r)+'">'+esc(o.r.time)+' '+esc(o.r.t)+'</span>'});
-  oc.forEach(function(o){dots+='<u style="--c:'+cc(o.r)+'"></u>'});
+  oc.slice(0,8).forEach(function(o){dots+='<u style="--c:'+cc(o.r)+'"></u>'});
   var payd=oc.some(function(o){return o.r.cat==='pago'});
-  h+='<button class="cell'+(out?' out':'')+(ds===T?' today':'')+(S.day[ds]?' hasnote':'')+'" '+(out?'':'data-act="day" data-d="'+ds+'"')+'><div class="n"><span>'+dt.getDate()+'</span>'+(payd?'<em>PAGO</em>':'')+'</div>'+ev+(oc.length>3?'<span class="more">+'+(oc.length-3)+' más</span>':'')+'<div class="dots">'+dots.slice(0,400)+'</div></button>'}
+  h+='<button class="cell'+(out?' out':'')+(ds===T?' today':'')+(S.day[ds]?' hasnote':'')+'" '+(out?'':'data-act="day" data-d="'+ds+'"')+'><div class="n"><span>'+dt.getDate()+'</span>'+(payd?'<em>PAGO</em>':'')+'</div>'+ev+(oc.length>3?'<span class="more">+'+(oc.length-3)+' más</span>':'')+'<div class="dots">'+dots+'</div></button>'}
  return h+'</div>'}
 /* ===== PLANES ===== */
 function vPlan(){var h='<div class="head"><div><h2 style="font-size:clamp(34px,6vw,56px)">Planes de trabajo</h2><p class="empty" style="padding:6px 0">Lo grande, partido en pasos chicos.</p></div><button class="btn" data-act="newplan">'+ico('plus',2.4).replace('<svg','<svg width="18" height="18"')+' Nuevo plan</button></div><div class="plans">';

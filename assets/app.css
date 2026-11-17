@@ -333,3 +333,4 @@ textarea.i{resize:vertical;min-height:86px}
 .dial .now text{paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}
 @media(max-width:900px){.grid2>div:first-child{display:contents}.grid2>div:last-child{order:2}.grid2 .card.next{order:3;margin-top:0!important}}
 @media(max-width:560px){.tools .search,.tools .i{flex:1 1 100%;width:100%!important}.dial svg text{font-size:14px}.paybar div{padding:14px}}
+@media(max-width:700px){.cell .n em{display:none}}
