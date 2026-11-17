@@ -107,7 +107,7 @@ if ($logged) {
     $_SESSION['last'] = time();
     $html = (string)file_get_contents(__DIR__ . '/private/app.html');
     foreach (['assets/app.css', 'assets/app.js', 'assets/conc.js', 'assets/visa.js'] as $a) { $v = @filemtime(__DIR__ . '/' . $a) ?: 1; $html = str_replace($a . '"', $a . '?v=' . $v . '"', $html); }
-    $html = str_replace('<head>', '<head><base href="' . h($base) . '"><meta name="finish-csrf" content="' . h($_SESSION['csrf']) . '">', $html);
+    $html = str_replace('<head>', '<head><base href="' . h($base) . '"><meta name="finish-csrf" content="' . h($_SESSION['csrf']) . '">' . '<script>try{var t=localStorage.getItem("finish_theme")||"auto";document.documentElement.setAttribute("data-theme",t==="dark"||(t==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light")}catch(e){}</script>', $html);
     $html = str_replace('</body>', '<a class="salir" href="' . h($base) . '?salir=1">Salir</a></body>', $html);
     echo $html; exit;
 }
