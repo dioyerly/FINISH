@@ -26,12 +26,18 @@ function fixS(){if(!S||!S.rem)S=seed();S.day=S.day||{};S.done=S.done||{};['soc',
 function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}if(fixS())save()}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}syncSoon()}
 /* ===== sincronización con la base de datos (api.php) ===== */
+var LISTS=['soc','bancos','prov','pagos','plans','notes','rem'];
+function idsOf(d){var o={};LISTS.forEach(function(k){o[k]={};(d[k]||[]).forEach(function(x){if(x&&x.id)o[k][x.id]=1})});return o}
+function knownSave(){try{localStorage.setItem(KEY+'_k',JSON.stringify(idsOf(S)))}catch(e){}}
+function knownLoad(){try{return JSON.parse(localStorage.getItem(KEY+'_k'))}catch(e){return null}}
+/* Lo cargado en este aparato que todavía no llegó a la base (ni fue borrado desde otro) se conserva al traer la versión del servidor */
+function mergeLocal(srv){var kn=knownLoad(),n=0;if(!S)return 0;LISTS.forEach(function(k){srv[k]=srv[k]||[];var sid={};srv[k].forEach(function(x){sid[x.id]=1});(S[k]||[]).forEach(function(x){if(x&&x.id&&!sid[x.id]&&!(kn&&kn[k]&&kn[k][x.id])){srv[k].push(x);n++}})});return n}
 var SYNC={on:false,ver:0,t:null,busy:false,dirty:false,csrf:'',state:'local'};
 function syncApi(a,body){return fetch('api.php?a='+a,body?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF':SYNC.csrf},body:JSON.stringify(body)}:{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){j.status=r.status;return j})})}
 function syncSoon(){if(!SYNC.on)return;SYNC.dirty=true;clearTimeout(SYNC.t);SYNC.t=setTimeout(syncPush,700)}
 function syncPush(){if(!SYNC.on||SYNC.busy||!SYNC.dirty)return;SYNC.busy=true;SYNC.dirty=false;
  syncApi('save',{version:SYNC.ver,data:S}).then(function(j){SYNC.busy=false;
-  if(j.status===200){SYNC.ver=j.version;SYNC.state='ok';if(SYNC.dirty)syncPush();else{syncMark();syncOutbox()}}
+  if(j.status===200){SYNC.ver=j.version;SYNC.state='ok';knownSave();if(SYNC.dirty)syncPush();else{syncMark();syncOutbox()}}
   else if(j.status===409){SYNC.dirty=false;syncPull(true)}
   else if(j.status===401){SYNC.on=false;SYNC.state='auth';toast('Tu sesión venció: entrá de nuevo para seguir guardando en la base')}
   else{SYNC.state='err';SYNC.dirty=true;clearTimeout(SYNC.t);SYNC.t=setTimeout(syncPush,15000);syncMark()}
@@ -39,12 +45,12 @@ function syncPush(){if(!SYNC.on||SYNC.busy||!SYNC.dirty)return;SYNC.busy=true;SY
 function syncOutbox(){try{syncApi('outbox',{items:outboxPayload()})}catch(e){}}
 function syncMark(){var e=document.getElementById('syncst');if(e)e.innerHTML=syncText()}
 function syncText(){return SYNC.state==='ok'?'<b style="color:#0f7b6c">● Guardado en la base de datos</b> (versión '+SYNC.ver+')':SYNC.state==='err'?'<b style="color:#b83a1f">● Sin conexión con la base:</b> guardado en este navegador, reintento solo':SYNC.state==='auth'?'Sesión vencida':SYNC.state==='baddb'?'<b style="color:#b83a1f">No se pudo conectar a la base.</b> Error de MySQL: '+esc(SYNC.det||'sin detalle'):SYNC.state==='nodb'?'Sin base de datos configurada: se guarda solo en este navegador':'Se guarda solo en este navegador'}
-function syncPull(conflict){return syncApi('load').then(function(j){if(j.status===200&&j.data&&j.data.rem){var busy=document.getElementById('ov')&&document.getElementById('ov').classList.contains('on');if(!conflict&&(SYNC.dirty||SYNC.busy||busy))return;if(!conflict&&j.version===SYNC.ver)return;S=j.data;fixS();SYNC.ver=j.version;SYNC.state='ok';try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render();if(conflict)toast('Se actualizó con los cambios hechos desde otro dispositivo')}})}
+function syncPull(conflict){return syncApi('load').then(function(j){if(j.status===200&&j.data&&j.data.rem){var busy=document.getElementById('ov')&&document.getElementById('ov').classList.contains('on');if(!conflict&&(SYNC.dirty||SYNC.busy||busy))return;if(!conflict&&j.version===SYNC.ver)return;var rec=mergeLocal(j.data);S=j.data;fixS();SYNC.ver=j.version;SYNC.state='ok';try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}knownSave();render();if(rec){save();toast('Se actualizó desde otro dispositivo y se conservaron '+rec+' carga'+(rec>1?'s':'')+' tuya'+(rec>1?'s':'')+' sin guardar')}else if(conflict)toast('Se actualizó con los cambios hechos desde otro dispositivo')}})}
 function syncInit(){var m=document.querySelector('meta[name="finish-csrf"]');if(!m)return;SYNC.csrf=m.content;SYNC.on=true;
  syncApi('load').then(function(j){
   if(j.status===200){SYNC.ver=j.version||0;SYNC.state='ok';
    var has=function(d){return !!d&&['rem','prov','pagos','plans','notes','soc','bancos'].some(function(k){return d[k]&&d[k].length})};
-   if(has(j.data)||(j.data&&!has(S))){S=j.data;fixS();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render();syncOutbox()}
+   if(has(j.data)||(j.data&&!has(S))){var rec=has(j.data)?mergeLocal(j.data):0;S=j.data;fixS();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}knownSave();render();syncOutbox();if(rec){save();toast('Se recuperaron '+rec+' carga'+(rec>1?'s':'')+' de este aparato que no estaban en la base')}}
    else if(has(S)){SYNC.dirty=true;syncPush()}}
   else if(j.status===503){SYNC.on=false;SYNC.state=j.error==='db'?'baddb':'nodb';SYNC.det=j.detalle||'';render()}
   else{SYNC.state='err';syncMark()}
@@ -455,10 +461,24 @@ function tresoHTML(){return ''
 
 function exportPagos(){var sel=S.pagos.filter(function(p){return SEL[p.id]}),L=sel.length?sel:pagosFilt();if(!L.length){toast('No hay pagos para exportar');return}
  var f=function(x){if(!x)return '';var q=String(x).slice(0,10).split('-');return q[2]+'/'+q[1]+'/'+q[0]};
- var rows=[['Fecha de pago','Estado','Confirmado','Proveedor','CUIT','CBU / Alias','Comprobante','Forma de pago','Cheque','Sociedad','Banco origen','Vencimiento','Monto']];
- L.forEach(function(p){var pr=p.pid?byId(S.prov,p.pid):null,so=byId(S.soc,p.sid),bk=byId(S.bancos,p.bid);
-  rows.push([f(p.fprog),p.estado==='pagado'?'Pagado':'Pendiente',p.fpago?f(p.fpago)+' '+p.fpago.slice(11):'',pagoNombre(p),String(pr&&pr.cuit||''),String(pr&&pr.cbu||''),p.nro||'',p.forma||'',p.cheque||'',so?so.nombre:'',bk?bk.nombre:'',f(p.fvenc),+p.monto||0])});
- loadXlsx().then(function(X){var ws=X.utils.aoa_to_sheet(rows),wb=X.utils.book_new();ws['!cols']=[12,10,16,34,14,26,18,22,12,24,20,12,14].map(function(w){return {wch:w}});X.utils.book_append_sheet(wb,ws,'Pagos');var n=new Date();X.writeFile(wb,'PAGOS_'+today().replace(/-/g,'')+'_'+pad(n.getHours())+pad(n.getMinutes())+'.xlsx');toast('Excel con '+L.length+' pago'+(L.length>1?'s':''))}).catch(function(){toast('No pude generar el Excel')})}
+ var G=[
+  {t:'TRANSFERENCIAS',c:'FF4472C4',h:'FFD9E1F2',ok:function(p){return FSERV.indexOf(p.forma)<0&&FCHQ.indexOf(p.forma)<0},cols:['Fecha de pago','Estado','Sociedad','Banco origen','Proveedor / Servicio','Descripción','N° Factura','OC / OP','Vencimiento','CUIT','CBU / Alias','Monto']},
+  {t:'CHEQUES',c:'FF70AD47',h:'FFE2EFDA',ok:function(p){return FCHQ.indexOf(p.forma)>=0},cols:['Fecha de pago','Estado','Sociedad','Banco origen','Proveedor / Servicio','Descripción','N° Factura','OC / OP','Vencimiento','CUIT','N° de cheque / eCheq','Monto']},
+  {t:'SERVICIOS / PAGOS DIRECTOS',c:'FFFFC000',h:'FFFFF2CC',ok:function(p){return FSERV.indexOf(p.forma)>=0},cols:['Fecha de pago','Estado','Sociedad','Banco origen','Proveedor / Servicio','Descripción','N° Factura','OC / OP','Vencimiento','Forma de pago','Código VEP / ID servicio','Monto']}];
+ function fila(g,p){var pr=p.pid?byId(S.prov,p.pid):null,so=byId(S.soc,p.sid),bk=byId(S.bancos,p.bid),base=[f(p.fprog),p.estado==='pagado'?'PAGADO':'PENDIENTE',so?so.nombre:'',bk?bk.nombre:'',pagoNombre(p),p.desc||'',p.nro||'',p.oc||'',f(p.fvenc)];
+  return base.concat(g.t==='TRANSFERENCIAS'?[String(pr&&pr.cuit||''),String(pr&&pr.cbu||'')]:g.t==='CHEQUES'?[String(pr&&pr.cuit||''),p.cheque||'']:[p.forma||'',p.nro||'']).concat([+p.monto||0])}
+ loadExcelJs().then(function(E){var wb=new E.Workbook(),ws=wb.addWorksheet('Planilla Pagos'),N=12,MON='$#,##0.00',LINE='FFD9DEEB',bd={bottom:{style:'thin',color:{argb:LINE}}},fill=function(c){return {type:'pattern',pattern:'solid',fgColor:{argb:c}}},tot=0,usados={};
+  [12,12,22,18,32,28,18,12,13,16,26,16].forEach(function(w,i){ws.getColumn(i+1).width=w});
+  L.slice().sort(function(a,b){return (a.fprog||'9999')<(b.fprog||'9999')?-1:(a.fprog||'9999')>(b.fprog||'9999')?1:0}).forEach(function(p){var g=G.filter(function(x){return x.ok(p)})[0];(usados[g.t]=usados[g.t]||[]).push(p)});
+  G.forEach(function(g){var ls=usados[g.t];if(!ls)return;
+   var r=ws.addRow([g.t]);ws.mergeCells(r.number,1,r.number,N);r.height=26;var c=r.getCell(1);c.fill=fill(g.c);c.font={bold:true,size:13,color:{argb:'FFFFFFFF'}};c.alignment={vertical:'middle'};
+   var h=ws.addRow(g.cols);h.height=28;h.eachCell(function(c){c.fill=fill(g.h);c.font={bold:true};c.alignment={horizontal:'center',vertical:'middle',wrapText:true};c.border=bd});
+   var sm=0;ls.forEach(function(p,k){var row=ws.addRow(fila(g,p));sm+=+p.monto||0;row.eachCell({includeEmpty:true},function(c,n){c.border=bd;c.alignment={vertical:'middle'};if(n===N)c.numFmt=MON;if(p.estado==='pagado')c.font={color:{argb:'FF6A7186'}};if(k%2)c.fill=fill('FFF8F9FC')})});
+   var t=ws.addRow(['SUBTOTAL '+g.t]);ws.mergeCells(t.number,1,t.number,N-1);t.getCell(1).font={bold:true};t.getCell(N).value=sm;t.getCell(N).numFmt=MON;t.eachCell({includeEmpty:true},function(c){c.fill=fill(g.h);c.font={bold:true};c.border=bd});
+   ws.addRow([]);tot+=sm});
+  var gt=ws.addRow(['TOTAL GENERAL']);ws.mergeCells(gt.number,1,gt.number,N-1);gt.height=26;gt.getCell(N).value=tot;gt.getCell(N).numFmt=MON;gt.eachCell({includeEmpty:true},function(c){c.fill=fill('FF0E1120');c.font={bold:true,size:12,color:{argb:'FFFFFFFF'}};c.alignment={vertical:'middle'}});
+  ws.views=[{state:'frozen',ySplit:0}];
+  return wb.xlsx.writeBuffer()}).then(function(buf){var n=new Date(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download='PLANILLA_PAGOS_'+today().replace(/-/g,'')+'_'+pad(n.getHours())+pad(n.getMinutes())+'.xlsx';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);toast('Planilla con '+L.length+' pago'+(L.length>1?'s':''))}).catch(function(e){console.error(e);toast('No pude generar el Excel')})}
 /* ===== importar vencimientos de la app anterior ===== */
 function importVenc(txt){var arr;try{arr=JSON.parse(txt)}catch(e){toast('Ese archivo no es un JSON válido');return}if(!Array.isArray(arr)){toast('No parece el archivo de vencimientos');return}
  var me=S.ppl.filter(function(p){return p.me})[0],T=today(),nu=0,sk=0,old=0;
